@@ -1,0 +1,288 @@
+00000000, NOP, No Operation
+
+00110111, STC, Set Carry
+00111111, CMC, Complement Carry
+
+00000100, INR_B, Increment Register or Memory 
+00001100, INR_C, Increment Register or Memory
+00010100, INR_D, Increment Register or Memory
+00011100, INR_E, Increment Register or Memory
+00100100, INR_H, Increment Register or Memory
+00101100, INR_L, Increment Register or Memory
+00110100, INR_M, Increment Register or Memory
+00111100, INR_A, Increment Register or Memory
+
+00000101, DCR_B, Decrement Register or Memory 
+00001101, DCR_C, Decrement Register or Memory
+00010101, DCR_D, Decrement Register or Memory
+00011101, DCR_E, Decrement Register or Memory
+00100101, DCR_H, Decrement Register or Memory
+00101101, DCR_L, Decrement Register or Memory
+00110101, DCR_M, Decrement Register or Memory
+00111101, DCR_A, Decrement Register or Memory
+
+00101111, CMA, Complement Accumulator
+00100111, DAA, Decimal Adjust Accumulator
+
+01000000, MOV_B_B, No Operation
+01000001, MOV_B_C, Move
+01000010, MOV_B_D, Move
+01000011, MOV_B_E, Move
+01000100, MOV_B_H, Move
+01000101, MOV_B_L, Move
+01000110, MOV_B_M, Move
+01000111, MOV_B_A, Move
+
+01001000, MOV_C_B, Move
+01001001, MOV_C_C, No Operation
+01001010, MOV_C_D, Move
+01001011, MOV_C_E, Move
+01001100, MOV_C_H, Move
+01001101, MOV_C_L, Move
+01001110, MOV_C_M, Move
+01001111, MOV_C_A, Move
+
+01010000, MOV_D_B, Move
+01010001, MOV_D_C, Move
+01010010, MOV_D_D, No Operation
+01010011, MOV_D_E, Move
+01010100, MOV_D_H, Move
+01010101, MOV_D_L, Move
+01010110, MOV_D_M, Move
+01010111, MOV_D_A, Move
+
+01011000, MOV_E_B, Move
+01011001, MOV_E_C, Move
+01011010, MOV_E_D, Move
+01011011, MOV_E_E, No Operation
+01011100, MOV_E_H, Move
+01011101, MOV_E_L, Move
+01011110, MOV_E_M, Move
+01011111, MOV_E_A, Move
+
+01100000, MOV_H_B, Move
+01100001, MOV_H_C, Move
+01100010, MOV_H_D, Move
+01100011, MOV_H_E, Move
+01100100, MOV_H_H, No Operation
+01100101, MOV_H_L, Move
+01100110, MOV_H_M, Move
+01100111, MOV_H_A, Move
+
+01101000, MOV_L_B, Move
+01101001, MOV_L_C, Move
+01101010, MOV_L_D, Move
+01101011, MOV_L_E, Move
+01101100, MOV_L_H, Move
+01101101, MOV_L_L, No Operation
+01101110, MOV_L_M, Move
+01101111, MOV_L_A, Move
+
+01110000, MOV_M_B, Move
+01110001, MOV_M_C, Move
+01110010, MOV_M_D, Move
+01110011, MOV_M_E, Move
+01110100, MOV_M_H, Move
+01110101, MOV_M_L, Move
+01110111, MOV_M_A, Move
+
+01111000, MOV_A_B, Move
+01111001, MOV_A_C, Move
+01111010, MOV_A_D, Move
+01111011, MOV_A_E, Move
+01111100, MOV_A_H, Move
+01111101, MOV_A_L, Move
+01111110, MOV_A_M, Move
+01111111, MOV_A_A, No Operation
+
+00000010, STAX_B, Store Accumulator
+00010010, STAX_D, Store Accumulator
+
+00001010, LDAX_B, Load Accumulator
+00011010, LDAX_D, Load Accumulator
+
+10000000, ADD_B, ADD Register or Memory To Accumulator
+10000001, ADD_C, ADD Register or Memory To Accumulator
+10000010, ADD_D, ADD Register or Memory To Accumulator
+10000011, ADD_E, ADD Register or Memory To Accumulator
+10000100, ADD_H, ADD Register or Memory To Accumulator
+10000101, ADD_L, ADD Register or Memory To Accumulator
+10000110, ADD_M, ADD Register or Memory To Accumulator
+10000111, ADD_A, ADD Register or Memory To Accumulator
+
+10001000, ADC_B, ADD Register or Memory to Accumulator with Carry
+10001001, ADC_C, ADD Register or Memory to Accumulator with Carry
+10001010, ADC_D, ADD Register or Memory to Accumulator with Carry
+10001011, ADC_E, ADD Register or Memory to Accumulator with Carry
+10001100, ADC_H, ADD Register or Memory to Accumulator with Carry
+10001101, ADC_L, ADD Register or Memory to Accumulator with Carry
+10001110, ADC_M, ADD Register or Memory to Accumulator with Carry
+10001111, ADC_A, ADD Register or Memory to Accumulator with Carry
+
+10010000, SUB_B, Subtract Register or Memory From Accumulator
+10010001, SUB_C, Subtract Register or Memory From Accumulator
+10010010, SUB_D, Subtract Register or Memory From Accumulator
+10010011, SUB_E, Subtract Register or Memory From Accumulator
+10010100, SUB_H, Subtract Register or Memory From Accumulator
+10010101, SUB_L, Subtract Register or Memory From Accumulator
+10010110, SUB_M, Subtract Register or Memory From Accumulator
+10010111, SUB_A, Subtract Register or Memory From Accumulator
+
+10011000, SBB_B, Subtract Register or Memory From Accumulator With Borrow
+10011001, SBB_C, Subtract Register or Memory From Accumulator With Borrow
+10011010, SBB_D, Subtract Register or Memory From Accumulator With Borrow
+10011011, SBB_E, Subtract Register or Memory From Accumulator With Borrow
+10011100, SBB_H, Subtract Register or Memory From Accumulator With Borrow
+10011101, SBB_L, Subtract Register or Memory From Accumulator With Borrow
+10011110, SBB_M, Subtract Register or Memory From Accumulator With Borrow
+10011111, SBB_A, Subtract Register or Memory From Accumulator With Borrow
+
+10100000, ANA_B, Logical and Register or Memory With Accumulator
+10100001, ANA_C, Logical and Register or Memory With Accumulator
+10100010, ANA_D, Logical and Register or Memory With Accumulator
+10100011, ANA_E, Logical and Register or Memory With Accumulator
+10100100, ANA_H, Logical and Register or Memory With Accumulator
+10100101, ANA_L, Logical and Register or Memory With Accumulator
+10100110, ANA_M, Logical and Register or Memory With Accumulator
+10100111, ANA_A, Logical and Register or Memory With Accumulator
+
+10101000, XRA_B, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+10101001, XRA_C, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+10101010, XRA_D, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+10101011, XRA_E, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+10101100, XRA_H, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+10101101, XRA_L, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+10101110, XRA_M, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+10101111, XRA_A, Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
+
+10110000, ORA_B, Logical or Register or Memory With Accumulator
+10110001, ORA_C, Logical or Register or Memory With Accumulator
+10110010, ORA_D, Logical or Register or Memory With Accumulator
+10110011, ORA_E, Logical or Register or Memory With Accumulator
+10110100, ORA_H, Logical or Register or Memory With Accumulator
+10110101, ORA_L, Logical or Register or Memory With Accumulator
+10110110, ORA_M, Logical or Register or Memory With Accumulator
+10110111, ORA_A, Logical or Register or Memory With Accumulator
+
+10111000, CMP_B, Compare Register or Memory With Accumulator
+10111001, CMP_C, Compare Register or Memory With Accumulator
+10111010, CMP_D, Compare Register or Memory With Accumulator
+10111011, CMP_E, Compare Register or Memory With Accumulator
+10111100, CMP_H, Compare Register or Memory With Accumulator
+10111101, CMP_L, Compare Register or Memory With Accumulator
+10111110, CMP_M, Compare Register or Memory With Accumulator
+10111111, CMP_A, Compare Register or Memory With Accumulator
+
+00000111, RLC, Rotate Accumulator Left
+00001111, RRC, Rotate Accumulator Right
+00010111, RAL, Rotate Accumulator Left Through Carry
+00011111, RAR, Rotate Accumulator Right Through Carry
+
+11000101, PUSH_B, Push Data Onto Stack
+11010101, PUSH_D, Push Data Onto Stack
+11100101, PUSH_H, Push Data Onto Stack
+11110101, PUSH_PSW, Push Data Onto Stack
+
+11000001, POP_B, Pop Data Off Stack
+11010001, POP_D, Pop Data Off Stack
+11100001, POP_H, Pop Data Off Stack
+11110001, POP_PSW, Pop Data Off Stack
+
+00001001, DAD_B, Double Add
+00011001, DAD_D, Double Add
+00101001, DAD_H, Double Add
+00111001, DAD_SP, Double Add
+
+00000011, INX_B, Increment Register Pair
+00010011, INX_D, Increment Register Pair
+00100011, INX_H, Increment Register Pair
+00110011, INX_SP, Increment Register Pair
+
+00001011, DCX_B, Decrement Register Pair
+00011011, DCX_D, Decrement Register Pair
+00101011, DCX_H, Decrement Register Pair
+00111011, DCX_SP, Decrement Register Pair
+
+11101011, XCHG, Exchange Registers
+11100011, XTHL, Exchange Stack
+
+11111001, SPHL, Load SP From H and L
+
+00000001, LXI_B, Move Immediate Data
+00010001, LXI_D, Move Immediate Data
+00100001, LXI_H, Move Immediate Data
+00110001, LXI_SP, Move Immediate Data
+
+00000110, MVI_B, Move Immediate Data
+00001110, MVI_C, Move Immediate Data
+00010110, MVI_D, Move Immediate Data
+00011110, MVI_E, Move Immediate Data
+00100110, MVI_H, Move Immediate Data
+00101110, MVI_L, Move Immediate Data
+00110110, MVI_M, Move Immediate Data
+00111110, MVI_A, Move Immediate Data
+
+11000110, ADI, Add Immediate to Accumulator
+11001110, ACI, Add Immediate to Accumulator With Carry
+
+11010110, SUI, Subtract Immediate from Accumulator
+11011110, SBI, Subtract Immediate from Accumulator With Borrow
+
+11100110, ANI, And Immediate With Accumulator
+11101110, XRI, Exclusive-Or Immediate With Accumulator
+11110110, ORI, Or Immediate With Accumulator 
+11111110, CPI, Compare Immediate With Accumulator
+
+00110010, STA, Store Accumulator Direct
+00111010, LDA, Load Accumulator Direct
+00100010, SHLD, Store H and L Direct
+00101010, LHLD, Load H and L Direct
+
+11101001, PCHL, Load Program Counter
+
+11000011, JMP, Jump
+11011010, JC, Jump If Carry
+11010010, JNC, Jump No Carry
+11001010, JZ, Jump If Zero
+11000010, JNZ, Jump If Not Zero
+11111010, JM, Jump If Minus
+11110010, JP, Jump If Positive
+11101010, JPE, Jump If Parity Even
+11100010, JPO, Jump If Parity Odd
+
+11001101, CALL, Call
+11011100, CC, Call If Carry
+11010100, CNC, Call If No Carry
+11001100, CZ, Call If Zero
+11000100, CNZ, Call If Not Zero
+11111100, CM, Call If Minus
+11110100, CP, Call If Plus
+11101100, CPE, Call If Parity Even
+11100100, CPO, Call If Parity Odd
+
+11001001, RET, Return
+11011000, RC, Return If Carry
+11010000, RNC, Return If No Carry
+11001000, RZ, Return If Zero
+11000000, RNZ, Return If Not Zero
+11111000, RM, Return If Minus
+11110000, RP, Return If Plus,
+11101000, RPE, Return If Parity Even
+11100000, RPO, Return If Parity Odd
+
+11000111, RST_1, Restart
+11001111, RST_2, Restart
+11010111, RST_3, Restart
+11011111, RST_4, Restart
+11100111, RST_5, Restart
+11101111, RST_6, Restart
+11110111, RST_7, Restart
+11111111, RST_8, Restart
+
+11111011, EI, Enable Interrupts
+11110011, DI, Disable Interrupts
+
+11011011, IN, Input
+11010011, OUT, Output
+
+01110110, HLT, Halt
