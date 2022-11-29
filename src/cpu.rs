@@ -762,14 +762,14 @@ enum Operand8 {
 impl From<u8> for Operand8 {
     fn from(orig: u8) -> Self {
         match orig {
-            0 => Operand8::RegB,
-            1 => Operand8::RegC,
-            2 => Operand8::RegD,
-            3 => Operand8::RegE,
-            4 => Operand8::RegH,
-            5 => Operand8::RegL,
-            6 => Operand8::Memory,
-            _ => Operand8::RegA
+            0 => return Operand8::RegB,
+            1 => return Operand8::RegC,
+            2 => return Operand8::RegD,
+            3 => return Operand8::RegE,
+            4 => return Operand8::RegH,
+            5 => return Operand8::RegL,
+            6 => return Operand8::Memory,
+            _ => return Operand8::RegA
         }
     }
 }
@@ -786,10 +786,10 @@ enum Operand16 {
 impl From<u8> for Operand16 {
     fn from(orig: u8) -> Self {
         match orig {
-            0 => Operand16::RegPairB,
-            1 => Operand16::RegPairD,
-            2 => Operand16::RegPairH,
-            _ => Operand16::PSW
+            0 => return Operand16::RegPairB,
+            1 => return Operand16::RegPairD,
+            2 => return Operand16::RegPairH,
+            _ => return Operand16::PSW
         }
     }
 }
