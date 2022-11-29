@@ -745,6 +745,55 @@ impl From<u8> for Instruction {
     }
 }
 
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[repr(u8)]
+enum Operand8 {
+    RegB = 0,
+    RegC = 1,
+    RegD = 2,
+    RegE = 3,
+    RegH = 4,
+    RegL = 5,
+    Memory = 6,
+    RegA = 7
+}
+
+impl From<u8> for Operand8 {
+    fn from(orig: u8) -> Self {
+        match orig {
+            0 => Operand8::RegB,
+            1 => Operand8::RegC,
+            2 => Operand8::RegD,
+            3 => Operand8::RegE,
+            4 => Operand8::RegH,
+            5 => Operand8::RegL,
+            6 => Operand8::Memory,
+            _ => Operand8::RegA
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[repr(u8)]
+enum Operand16 {
+    RegPairB = 0,
+    RegPairD = 1,
+    RegPairH = 2,
+    PSW = 3
+}
+
+impl From<u8> for Operand16 {
+    fn from(orig: u8) -> Self {
+        match orig {
+            0 => Operand16::RegPairB,
+            1 => Operand16::RegPairD,
+            2 => Operand16::RegPairH,
+            _ => Operand16::PSW
+        }
+    }
+}
+
 struct Intel8080 {
     registers: Registers
 }
@@ -753,254 +802,272 @@ impl Intel8080 {
     fn do_instruction(&mut self, instruction: u8) {
         let instruction: Instruction = Instruction::from(instruction);   
         match instruction {
-            Instruction::NOP => { },
             Instruction::STC => { self.stc() },
             Instruction::CMC => { self.cmc() },
-            Instruction::INR_B => { self.inr_b() },
-            Instruction::INR_C => { self.inr_c() },
-            Instruction::INR_D => { self.inr_d() },
-            Instruction::INR_E => { self.inr_e() },
-            Instruction::INR_H => { self.inr_h() },
-            Instruction::INR_L => { self.inr_l() },
-            Instruction::INR_M => { self.inr_m() },
-            Instruction::INR_A => { self.inr_a() },
-            Instruction::DCR_B => { self.dcr_b() },
-            Instruction::DCR_C => { self.dcr_c() },
-            Instruction::DCR_D => { self.dcr_d() },
-            Instruction::DCR_E => { self.dcr_e() },
-            Instruction::DCR_H => { self.dcr_h() },
-            Instruction::DCR_L => { self.dcr_l() },
-            Instruction::DCR_M => { self.dcr_m() },
-            Instruction::DCR_A => { self.dcr_a() },
+            Instruction::INR_B => { self.inr(Operand8::RegB) },
+            Instruction::INR_C => { self.inr(Operand8::RegC) },
+            Instruction::INR_D => { self.inr(Operand8::RegD) },
+            Instruction::INR_E => { self.inr(Operand8::RegE) },
+            Instruction::INR_H => { self.inr(Operand8::RegH) },
+            Instruction::INR_L => { self.inr(Operand8::RegL) },
+            Instruction::INR_M => { self.inr(Operand8::Memory) },
+            Instruction::INR_A => { self.inr(Operand8::RegA) },
+            Instruction::DCR_B => { self.dcr(Operand8::RegB) },
+            Instruction::DCR_C => { self.dcr(Operand8::RegC)  },
+            Instruction::DCR_D => { self.dcr(Operand8::RegD) },
+            Instruction::DCR_E => { self.dcr(Operand8::RegE) },
+            Instruction::DCR_H => { self.dcr(Operand8::RegH) },
+            Instruction::DCR_L => { self.dcr(Operand8::RegL) },
+            Instruction::DCR_M => { self.dcr(Operand8::Memory) },
+            Instruction::DCR_A => { self.dcr(Operand8::RegA) },
             Instruction::CMA => { self.cma() },
             Instruction::DAA => { self.daa() },
-            Instruction::MOV_B_B => { },
-            Instruction::MOV_B_C => { self.mov_b_c() },
-            Instruction::MOV_B_D => { self.mov_b_d() },
-            Instruction::MOV_B_E => { self.mov_b_e() },
-            Instruction::MOV_B_H => { self.mov_b_h() },
-            Instruction::MOV_B_L => { self.mov_b_l() },
-            Instruction::MOV_B_M => { self.mov_b_m() },
-            Instruction::MOV_B_A => { self.mov_b_a() },
-            Instruction::MOV_C_B => { self.mov_c_b() },
-            Instruction::MOV_C_C => { },
-            Instruction::MOV_C_D => { self.mov_c_d() },
-            Instruction::MOV_C_E => { self.mov_c_e() },
-            Instruction::MOV_C_H => { self.mov_c_h() },
-            Instruction::MOV_C_L => { self.mov_c_l() },
-            Instruction::MOV_C_M => { self.mov_c_m() },
-            Instruction::MOV_C_A => { self.mov_c_a() },
-            Instruction::MOV_D_B => { self.mov_d_b() },
-            Instruction::MOV_D_C => { self.mov_d_c() },
-            Instruction::MOV_D_D => { },
-            Instruction::MOV_D_E => { self.mov_d_e() },
-            Instruction::MOV_D_H => { self.mov_d_h() },
-            Instruction::MOV_D_L => { self.mov_d_l() },
-            Instruction::MOV_D_M => { self.mov_d_m() },
-            Instruction::MOV_D_A => { self.mov_d_a() },
-            Instruction::MOV_E_B => { self.mov_e_b() },
-            Instruction::MOV_E_C => { self.mov_e_c() },
-            Instruction::MOV_E_D => { self.mov_e_d() },
-            Instruction::MOV_E_E => { },
-            Instruction::MOV_E_H => { self.mov_e_h() },
-            Instruction::MOV_E_L => { self.mov_e_l() },
-            Instruction::MOV_E_M => { self.mov_e_m() },
-            Instruction::MOV_E_A => { self.mov_e_a() },
-            Instruction::MOV_H_B => { self.mov_h_b() },
-            Instruction::MOV_H_C => { self.mov_h_c() },
-            Instruction::MOV_H_D => { self.mov_h_d() },
-            Instruction::MOV_H_E => { self.mov_h_e() },
-            Instruction::MOV_H_H => { },
-            Instruction::MOV_H_L => { self.mov_h_l() },
-            Instruction::MOV_H_M => { self.mov_h_m() },
-            Instruction::MOV_H_A => { self.mov_h_a() },
-            Instruction::MOV_L_B => { self.mov_l_b() },
-            Instruction::MOV_L_C => { self.mov_l_c() },
-            Instruction::MOV_L_D => { self.mov_l_d() },
-            Instruction::MOV_L_E => { self.mov_l_e() },
-            Instruction::MOV_L_H => { self.mov_l_h() },
-            Instruction::MOV_L_L => { },
-            Instruction::MOV_L_M => { self.mov_l_m() },
-            Instruction::MOV_L_A => { self.mov_l_a() },
-            Instruction::MOV_M_B => { self.mov_m_b() },
-            Instruction::MOV_M_C => { self.mov_m_c() },
-            Instruction::MOV_M_D => { self.mov_m_d() },
-            Instruction::MOV_M_E => { self.mov_m_e() },
-            Instruction::MOV_M_H => { self.mov_m_h() },
-            Instruction::MOV_M_L => { self.mov_m_l() },
-            Instruction::MOV_M_A => { self.mov_m_a() },
-            Instruction::MOV_A_B => { self.mov_a_b() },
-            Instruction::MOV_A_C => { self.mov_a_c() },
-            Instruction::MOV_A_D => { self.mov_a_d() },
-            Instruction::MOV_A_E => { self.mov_a_e() },
-            Instruction::MOV_A_H => { self.mov_a_h() },
-            Instruction::MOV_A_L => { self.mov_a_l() },
-            Instruction::MOV_A_M => { self.mov_a_m() },
-            Instruction::MOV_A_A => { },
-            Instruction::STAX_B => { self.stax_b() },
-            Instruction::STAX_D => { self.stax_d() },
-            Instruction::LDAX_B => { self.ldax_b() },
-            Instruction::LDAX_D => { self.ldax_d() },
-            Instruction::ADD_B => { self.add_b() },
-            Instruction::ADD_C => { self.add_c() },
-            Instruction::ADD_D => { self.add_d() },
-            Instruction::ADD_E => { self.add_e() },
-            Instruction::ADD_H => { self.add_h() },
-            Instruction::ADD_L => { self.add_l() },
-            Instruction::ADD_M => { self.add_m() },
-            Instruction::ADD_A => { self.add_a() },
-            Instruction::ADC_B => { self.adc_b() },
-            Instruction::ADC_C => { self.adc_c() },
-            Instruction::ADC_D => { self.adc_d() },
-            Instruction::ADC_E => { self.adc_e() },
-            Instruction::ADC_H => { self.adc_h() },
-            Instruction::ADC_L => { self.adc_l() },
-            Instruction::ADC_M => { self.adc_m() },
-            Instruction::ADC_A => { self.adc_a() },
-            Instruction::SUB_B => { self.sub_b() },
-            Instruction::SUB_C => { self.sub_c() },
-            Instruction::SUB_D => { self.sub_d() },
-            Instruction::SUB_E => { self.sub_e() },
-            Instruction::SUB_H => { self.sub_h() },
-            Instruction::SUB_L => { self.sub_l() },
-            Instruction::SUB_M => { self.sub_m() },
-            Instruction::SUB_A => { self.sub_a() },
-            Instruction::SBB_B => { self.sbb_b() },
-            Instruction::SBB_C => { self.sbb_c() },
-            Instruction::SBB_D => { self.sbb_d() },
-            Instruction::SBB_E => { self.sbb_e() },
-            Instruction::SBB_H => { self.sbb_h() },
-            Instruction::SBB_L => { self.sbb_l() },
-            Instruction::SBB_M => { self.sbb_m() },
-            Instruction::SBB_A => { self.sbb_a() },
-            Instruction::ANA_B => { self.ana_b() },
-            Instruction::ANA_C => { self.ana_c() },
-            Instruction::ANA_D => { self.ana_d() },
-            Instruction::ANA_E => { self.ana_e() },
-            Instruction::ANA_H => { self.ana_h() },
-            Instruction::ANA_L => { self.ana_l() },
-            Instruction::ANA_M => { self.ana_m() },
-            Instruction::ANA_A => { self.ana_a() },
-            Instruction::XRA_B => { self.xra_b() },
-            Instruction::XRA_C => { self.xra_c() },
-            Instruction::XRA_D => { self.xra_d() },
-            Instruction::XRA_E => { self.xra_e() },
-            Instruction::XRA_H => { self.xra_h() },
-            Instruction::XRA_L => { self.xra_l() },
-            Instruction::XRA_M => { self.xra_m() },
-            Instruction::XRA_A => { self.xra_a() },
-            Instruction::ORA_B => { self.ora_b() },
-            Instruction::ORA_C => { self.ora_c() },
-            Instruction::ORA_D => { self.ora_d() },
-            Instruction::ORA_E => { self.ora_e() },
-            Instruction::ORA_H => { self.ora_h() },
-            Instruction::ORA_L => { self.ora_l() },
-            Instruction::ORA_M => { self.ora_m() },
-            Instruction::ORA_A => { self.ora_a() },
-            Instruction::CMP_B => { self.cmp_b() },
-            Instruction::CMP_C => { self.cmp_c() },
-            Instruction::CMP_D => { self.cmp_d() },
-            Instruction::CMP_E => { self.cmp_e() },
-            Instruction::CMP_H => { self.cmp_h() },
-            Instruction::CMP_L => { self.cmp_l() },
-            Instruction::CMP_M => { self.cmp_m() },
-            Instruction::CMP_A => { self.cmp_a() },
-            Instruction::RLC => { self.rlc() },
-            Instruction::RRC => { self.rrc() },
-            Instruction::RAL => { self.ral() },
-            Instruction::RAR => { self.rar() },
-            Instruction::PUSH_B => { self.push_b() },
-            Instruction::PUSH_D => { self.push_d() },
-            Instruction::PUSH_H => { self.push_h() },
-            Instruction::PUSH_PSW => { self.push_psw() },
-            Instruction::POP_B => { self.pop_b() },
-            Instruction::POP_D => { self.pop_d() },
-            Instruction::POP_H => { self.pop_h() },
-            Instruction::POP_PSW => { self.pop_psw() },
-            Instruction::DAD_B => { self.dad_b() },
-            Instruction::DAD_D => { self.dad_d() },
-            Instruction::DAD_H => { self.dad_h() },
-            Instruction::DAD_SP => { self.dad_sp() },
-            Instruction::INX_B => { self.inx_b() },
-            Instruction::INX_D => { self.inx_d() },
-            Instruction::INX_H => { self.inx_h() },
-            Instruction::INX_SP => { self.inx_sp() },
-            Instruction::DCX_B => { self.dcx_b() },
-            Instruction::DCX_D => { self.dcx_d() },
-            Instruction::DCX_H => { self.dcx_h() },
-            Instruction::DCX_SP => { self.dcx_sp() },
-            Instruction::XCHG => { self.xchg() },
-            Instruction::XTHL => { self.xthl() },
-            Instruction::SPHL => { self.sphl() },
-            Instruction::LXI_B => { self.lxi_b() },
-            Instruction::LXI_D => { self.lxi_d() },
-            Instruction::LXI_H => { self.lxi_h() },
-            Instruction::LXI_SP => { self.lxi_sp() },
-            Instruction::MVI_B => { self.mvi_b() },
-            Instruction::MVI_C => { self.mvi_c() },
-            Instruction::MVI_D => { self.mvi_d() },
-            Instruction::MVI_E => { self.mvi_e() },
-            Instruction::MVI_H => { self.mvi_h() },
-            Instruction::MVI_L => { self.mvi_l() },
-            Instruction::MVI_M => { self.mvi_m() },
-            Instruction::MVI_A => { self.mvi_a() },
-            Instruction::ADI => { self.adi() },
-            Instruction::ACI => { self.aci() },
-            Instruction::SUI => { self.sui() },
-            Instruction::SBI => { self.sbi() },
-            Instruction::ANI => { self.ani() },
-            Instruction::XRI => { self.xri() },
-            Instruction::ORI => { self.ori() },
-            Instruction::CPI => { self.cpi() },
-            Instruction::STA => { self.sta() },
-            Instruction::LDA => { self.lda() },
-            Instruction::SHLD => { self.shld() },
-            Instruction::LHLD => { self.lhld() },
-            Instruction::PCHL => { self.pchl() },
-            Instruction::JMP => { self.jmp() },
-            Instruction::JC => { self.jc() },
-            Instruction::JNC => { self.jnc() },
-            Instruction::JZ => { self.jz() },
-            Instruction::JNZ => { self.jnz() },
-            Instruction::JM => { self.jm() },
-            Instruction::JP => { self.jp() },
-            Instruction::JPE => { self.jpe() },
-            Instruction::JPO => { self.jpo() },
-            Instruction::CALL => { self.call() },
-            Instruction::CC => { self.cc() },
-            Instruction::CNC => { self.cnc() },
-            Instruction::CZ => { self.cz() },
-            Instruction::CNZ => { self.cnz() },
-            Instruction::CM => { self.cm() },
-            Instruction::CP => { self.cp() },
-            Instruction::CPE => { self.cpe() },
-            Instruction::CPO => { self.cpo() },
-            Instruction::RET => { self.ret() },
-            Instruction::RC => { self.rc() },
-            Instruction::RNC => { self.rnc() },
-            Instruction::RZ => { self.rz() },
-            Instruction::RNZ => { self.rnz() },
-            Instruction::RM => { self.rm() },
-            Instruction::RP => { self.rp() },
-            Instruction::RPE => { self.rpe() },
-            Instruction::RPO => { self.rpo() },
-            Instruction::RST_1 => { self.rst_1() },
-            Instruction::RST_2 => { self.rst_2() },
-            Instruction::RST_3 => { self.rst_3() },
-            Instruction::RST_4 => { self.rst_4() },
-            Instruction::RST_5 => { self.rst_5() },
-            Instruction::RST_6 => { self.rst_6() },
-            Instruction::RST_7 => { self.rst_7() },
-            Instruction::RST_8 => { self.rst_8() },
-            Instruction::EI => { self.ei() },
-            Instruction::DI => { self.di() },
-            Instruction::IN => { self.input() },
-            Instruction::OUT => { self.out() },
-            Instruction::HLT => { self.hlt() },
+            Instruction::MOV_B_C => { },
+            Instruction::MOV_B_D => { },
+            Instruction::MOV_B_E => { },
+            Instruction::MOV_B_H => { },
+            Instruction::MOV_B_L => { },
+            Instruction::MOV_B_M => { },
+            Instruction::MOV_B_A => { },
+            Instruction::MOV_C_B => { },
+            Instruction::MOV_C_D => { },
+            Instruction::MOV_C_E => { },
+            Instruction::MOV_C_H => { },
+            Instruction::MOV_C_L => { },
+            Instruction::MOV_C_M => { },
+            Instruction::MOV_C_A => { },
+            Instruction::MOV_D_B => { },
+            Instruction::MOV_D_C => { },
+            Instruction::MOV_D_E => { },
+            Instruction::MOV_D_H => { },
+            Instruction::MOV_D_L => { },
+            Instruction::MOV_D_M => { },
+            Instruction::MOV_D_A => { },
+            Instruction::MOV_E_B => { },
+            Instruction::MOV_E_C => { },
+            Instruction::MOV_E_D => { },
+            Instruction::MOV_E_H => { },
+            Instruction::MOV_E_L => { },
+            Instruction::MOV_E_M => { },
+            Instruction::MOV_E_A => { },
+            Instruction::MOV_H_B => { },
+            Instruction::MOV_H_C => { },
+            Instruction::MOV_H_D => { },
+            Instruction::MOV_H_E => { },
+            Instruction::MOV_H_L => { },
+            Instruction::MOV_H_M => { },
+            Instruction::MOV_H_A => { },
+            Instruction::MOV_L_B => { },
+            Instruction::MOV_L_C => { },
+            Instruction::MOV_L_D => { },
+            Instruction::MOV_L_E => { },
+            Instruction::MOV_L_H => { },
+            Instruction::MOV_L_M => { },
+            Instruction::MOV_L_A => { },
+            Instruction::MOV_M_B => { },
+            Instruction::MOV_M_C => { },
+            Instruction::MOV_M_D => { },
+            Instruction::MOV_M_E => { },
+            Instruction::MOV_M_H => { },
+            Instruction::MOV_M_L => { },
+            Instruction::MOV_M_A => { },
+            Instruction::MOV_A_B => { },
+            Instruction::MOV_A_C => { },
+            Instruction::MOV_A_D => { },
+            Instruction::MOV_A_E => { },
+            Instruction::MOV_A_H => { },
+            Instruction::MOV_A_L => { },
+            Instruction::MOV_A_M => { },
+            Instruction::STAX_B => { },
+            Instruction::STAX_D => { },
+            Instruction::LDAX_B => { },
+            Instruction::LDAX_D => { },
+            Instruction::ADD_B => { },
+            Instruction::ADD_C => { },
+            Instruction::ADD_D => { },
+            Instruction::ADD_E => { },
+            Instruction::ADD_H => { },
+            Instruction::ADD_L => { },
+            Instruction::ADD_M => { },
+            Instruction::ADD_A => { },
+            Instruction::ADC_B => { },
+            Instruction::ADC_C => { },
+            Instruction::ADC_D => { },
+            Instruction::ADC_E => { },
+            Instruction::ADC_H => { },
+            Instruction::ADC_L => { },
+            Instruction::ADC_M => { },
+            Instruction::ADC_A => { },
+            Instruction::SUB_B => { },
+            Instruction::SUB_C => { },
+            Instruction::SUB_D => { },
+            Instruction::SUB_E => { },
+            Instruction::SUB_H => { },
+            Instruction::SUB_L => { },
+            Instruction::SUB_M => { },
+            Instruction::SUB_A => { },
+            Instruction::SBB_B => { },
+            Instruction::SBB_C => { },
+            Instruction::SBB_D => { },
+            Instruction::SBB_E => { },
+            Instruction::SBB_H => { },
+            Instruction::SBB_L => { },
+            Instruction::SBB_M => { },
+            Instruction::SBB_A => { },
+            Instruction::ANA_B => { },
+            Instruction::ANA_C => { },
+            Instruction::ANA_D => { },
+            Instruction::ANA_E => { },
+            Instruction::ANA_H => { },
+            Instruction::ANA_L => { },
+            Instruction::ANA_M => { },
+            Instruction::ANA_A => { },
+            Instruction::XRA_B => { },
+            Instruction::XRA_C => { },
+            Instruction::XRA_D => { },
+            Instruction::XRA_E => { },
+            Instruction::XRA_H => { },
+            Instruction::XRA_L => { },
+            Instruction::XRA_M => { },
+            Instruction::XRA_A => { },
+            Instruction::ORA_B => { },
+            Instruction::ORA_C => { },
+            Instruction::ORA_D => { },
+            Instruction::ORA_E => { },
+            Instruction::ORA_H => { },
+            Instruction::ORA_L => { },
+            Instruction::ORA_M => { },
+            Instruction::ORA_A => { },
+            Instruction::CMP_B => { },
+            Instruction::CMP_C => { },
+            Instruction::CMP_D => { },
+            Instruction::CMP_E => { },
+            Instruction::CMP_H => { },
+            Instruction::CMP_L => { },
+            Instruction::CMP_M => { },
+            Instruction::CMP_A => { },
+            Instruction::RLC => { },
+            Instruction::RRC => { },
+            Instruction::RAL => { },
+            Instruction::RAR => { },
+            Instruction::PUSH_B => { },
+            Instruction::PUSH_D => { },
+            Instruction::PUSH_H => { },
+            Instruction::PUSH_PSW => { },
+            Instruction::POP_B => { },
+            Instruction::POP_D => { },
+            Instruction::POP_H => { },
+            Instruction::POP_PSW => { },
+            Instruction::DAD_B => { },
+            Instruction::DAD_D => { },
+            Instruction::DAD_H => { },
+            Instruction::DAD_SP => { },
+            Instruction::INX_B => { },
+            Instruction::INX_D => { },
+            Instruction::INX_H => { },
+            Instruction::INX_SP => { },
+            Instruction::DCX_B => { },
+            Instruction::DCX_D => { },
+            Instruction::DCX_H => { },
+            Instruction::DCX_SP => { },
+            Instruction::XCHG => { },
+            Instruction::XTHL => { },
+            Instruction::SPHL => { },
+            Instruction::LXI_B => { },
+            Instruction::LXI_D => { },
+            Instruction::LXI_H => { },
+            Instruction::LXI_SP => { },
+            Instruction::MVI_B => { },
+            Instruction::MVI_C => { },
+            Instruction::MVI_D => { },
+            Instruction::MVI_E => { },
+            Instruction::MVI_H => { },
+            Instruction::MVI_L => { },
+            Instruction::MVI_M => { },
+            Instruction::MVI_A => { },
+            Instruction::ADI => { },
+            Instruction::ACI => { },
+            Instruction::SUI => { },
+            Instruction::SBI => { },
+            Instruction::ANI => { },
+            Instruction::XRI => { },
+            Instruction::ORI => { },
+            Instruction::CPI => { },
+            Instruction::STA => { },
+            Instruction::LDA => { },
+            Instruction::SHLD => { },
+            Instruction::LHLD => { },
+            Instruction::PCHL => { },
+            Instruction::JMP => { },
+            Instruction::JC => { },
+            Instruction::JNC => { },
+            Instruction::JZ => { },
+            Instruction::JNZ => { },
+            Instruction::JM => { },
+            Instruction::JP => { },
+            Instruction::JPE => { },
+            Instruction::JPO => { },
+            Instruction::CALL => { },
+            Instruction::CC => { },
+            Instruction::CNC => { },
+            Instruction::CZ => { },
+            Instruction::CNZ => { },
+            Instruction::CM => { },
+            Instruction::CP => { },
+            Instruction::CPE => { },
+            Instruction::CPO => { },
+            Instruction::RET => { },
+            Instruction::RC => { },
+            Instruction::RNC => { },
+            Instruction::RZ => { },
+            Instruction::RNZ => { },
+            Instruction::RM => { },
+            Instruction::RP => { },
+            Instruction::RPE => { },
+            Instruction::RPO => { },
+            Instruction::RST_1 => { },
+            Instruction::RST_2 => { },
+            Instruction::RST_3 => { },
+            Instruction::RST_4 => { },
+            Instruction::RST_5 => { },
+            Instruction::RST_6 => { },
+            Instruction::RST_7 => { },
+            Instruction::RST_8 => { },
+            Instruction::EI => { },
+            Instruction::DI => { },
+            Instruction::IN => { },
+            Instruction::OUT => { },
+            Instruction::HLT => { },
             _ => { }
         }
     }
  
+    fn get_src(&self, src: Operand8) -> u8 {
+        match src {
+            Operand8::RegB => { return self.registers.b() },
+            Operand8::RegC => { return self.registers.c() },
+            Operand8::RegD => { return self.registers.d() },
+            Operand8::RegE => { return self.registers.e() },
+            Operand8::RegH => { return self.registers.h() },
+            Operand8::RegL => { return self.registers.l() },
+            Operand8::Memory => { unimplemented!(); }
+            Operand8::RegA => { return self.registers.accumulator(); }
+        }
+    }
+
+    fn write_dst(&mut self, dst: Operand8, val: u8) {
+        match dst {
+            Operand8::RegB => { self.registers.set_b(val) },
+            Operand8::RegC => { self.registers.set_c(val) },
+            Operand8::RegD => { self.registers.set_d(val) },
+            Operand8::RegE => { self.registers.set_e(val) },
+            Operand8::RegH => { self.registers.set_h(val) },
+            Operand8::RegL => { self.registers.set_l(val) },
+            Operand8::Memory => { unimplemented!(); }
+            Operand8::RegA => { self.registers.set_accumulator(val) }
+        }
+    }
+
     // Set Carry
     fn stc(&mut self) {
 
@@ -1011,713 +1078,47 @@ impl Intel8080 {
 
     }
 
-    // Increment Register or Memory 
-    fn inr_b(&mut self) {
-        self.registers.set_b(self.registers.b().wrapping_add(1));
-    }
-
     // Increment Register or Memory
-    fn inr_c(&mut self) {
-        self.registers.set_c(self.registers.c().wrapping_add(1));
-    }
-
-    // Increment Register or Memory
-    fn inr_d(&mut self) {
-
-    }
-
-    // Increment Register or Memory
-    fn inr_e(&mut self) {
-
-    }
-
-    // Increment Register or Memory
-    fn inr_h(&mut self) {
-
-    }
-
-    // Increment Register or Memory
-    fn inr_l(&mut self) {
-
-    }
-
-    // Increment Register or Memory
-    fn inr_m(&mut self) {
-
-    }
-
-    // Increment Register or Memory
-    fn inr_a(&mut self) {
-
-    }
-
-    // Decrement Register or Memory 
-    fn dcr_b(&mut self) {
-
+    fn inr(&mut self, reg: Operand8) {
+        let orig_val = self.get_src(reg);
+        let new_val = orig_val.wrapping_add(1);
+        self.write_dst(reg, new_val);
+        // TODO: Set flags
     }
 
     // Decrement Register or Memory
-    fn dcr_c(&mut self) {
-
+    fn dcr(&mut self, reg: Operand8) {
+        let orig_val = self.get_src(reg);
+        let new_val = orig_val.wrapping_sub(1);
+        self.write_dst(reg, new_val);
+        // TODO: Set flags
     }
 
-    // Decrement Register or Memory
-    fn dcr_d(&mut self) {
-
-    }
-
-    // Decrement Register or Memory
-    fn dcr_e(&mut self) {
-
-    }
-
-    // Decrement Register or Memory
-    fn dcr_h(&mut self) {
-
-    }
-
-    // Decrement Register or Memory
-    fn dcr_l(&mut self) {
-
-    }
-
-    // Decrement Register or Memory
-    fn dcr_m(&mut self) {
-
-    }
-
-    // Decrement Register or Memory
-    fn dcr_a(&mut self) {
-
-    }
-
-    // Complement Accumulator
     fn cma(&mut self) {
 
     }
 
-    // Decimal Adjust Accumulator
     fn daa(&mut self) {
 
     }
 
     // Move
-    fn mov_b_c(&mut self) {
-
-    }
-
-    // Move
-    fn mov_b_d(&mut self) {
-
-    }
-
-    // Move
-    fn mov_b_e(&mut self) {
-
-    }
-
-    // Move
-    fn mov_b_h(&mut self) {
-
-    }
-
-    // Move
-    fn mov_b_l(&mut self) {
-
-    }
-
-    // Move
-    fn mov_b_m(&mut self) {
-
-    }
-
-    // Move
-    fn mov_b_a(&mut self) {
-
-    }
-
-    // Move
-    fn mov_c_b(&mut self) {
-
-    }
-
-    // Move
-    fn mov_c_d(&mut self) {
-
-    }
-
-    // Move
-    fn mov_c_e(&mut self) {
-
-    }
-
-    // Move
-    fn mov_c_h(&mut self) {
-
-    }
-
-    // Move
-    fn mov_c_l(&mut self) {
-
-    }
-
-    // Move
-    fn mov_c_m(&mut self) {
-
-    }
-
-    // Move
-    fn mov_c_a(&mut self) {
-
-    }
-
-    // Move
-    fn mov_d_b(&mut self) {
-
-    }
-
-    // Move
-    fn mov_d_c(&mut self) {
-
-    }
-
-    // Move
-    fn mov_d_e(&mut self) {
-
-    }
-
-    // Move
-    fn mov_d_h(&mut self) {
-
-    }
-
-    // Move
-    fn mov_d_l(&mut self) {
-
-    }
-
-    // Move
-    fn mov_d_m(&mut self) {
-
-    }
-
-    // Move
-    fn mov_d_a(&mut self) {
-
-    }
-
-    // Move
-    fn mov_e_b(&mut self) {
-
-    }
-
-    // Move
-    fn mov_e_c(&mut self) {
-
-    }
-
-    // Move
-    fn mov_e_d(&mut self) {
-
-    }
-
-    // Move
-    fn mov_e_h(&mut self) {
-
-    }
-
-    // Move
-    fn mov_e_l(&mut self) {
-
-    }
-
-    // Move
-    fn mov_e_m(&mut self) {
-
-    }
-
-    // Move
-    fn mov_e_a(&mut self) {
-
-    }
-
-    // Move
-    fn mov_h_b(&mut self) {
-
-    }
-
-    // Move
-    fn mov_h_c(&mut self) {
-
-    }
-
-    // Move
-    fn mov_h_d(&mut self) {
-
-    }
-
-    // Move
-    fn mov_h_e(&mut self) {
-
-    }
-
-    // Move
-    fn mov_h_l(&mut self) {
-
-    }
-
-    // Move
-    fn mov_h_m(&mut self) {
-
-    }
-
-    // Move
-    fn mov_h_a(&mut self) {
-
-    }
-
-    // Move
-    fn mov_l_b(&mut self) {
-
-    }
-
-    // Move
-    fn mov_l_c(&mut self) {
-
-    }
-
-    // Move
-    fn mov_l_d(&mut self) {
-
-    }
-
-    // Move
-    fn mov_l_e(&mut self) {
-
-    }
-
-    // Move
-    fn mov_l_h(&mut self) {
-
-    }
-
-    // Move
-    fn mov_l_m(&mut self) {
-
-    }
-
-    // Move
-    fn mov_l_a(&mut self) {
-
-    }
-
-    // Move
-    fn mov_m_b(&mut self) {
-
-    }
-
-    // Move
-    fn mov_m_c(&mut self) {
-
-    }
-
-    // Move
-    fn mov_m_d(&mut self) {
-
-    }
-
-    // Move
-    fn mov_m_e(&mut self) {
-
-    }
-
-    // Move
-    fn mov_m_h(&mut self) {
-
-    }
-
-    // Move
-    fn mov_m_l(&mut self) {
-
-    }
-
-    // Move
-    fn mov_m_a(&mut self) {
-
-    }
-
-    // Move
-    fn mov_a_b(&mut self) {
-
-    }
-
-    // Move
-    fn mov_a_c(&mut self) {
-
-    }
-
-    // Move
-    fn mov_a_d(&mut self) {
-
-    }
-
-    // Move
-    fn mov_a_e(&mut self) {
-
-    }
-
-    // Move
-    fn mov_a_h(&mut self) {
-
-    }
-
-    // Move
-    fn mov_a_l(&mut self) {
-
-    }
-
-    // Move
-    fn mov_a_m(&mut self) {
+    fn mov(&mut self, src: Operand8, dst: Operand8) {
 
     }
 
     // Store Accumulator
-    fn stax_b(&mut self) {
-
-    }
-
-    // Store Accumulator
-    fn stax_d(&mut self) {
+    fn stax(&mut self) {
 
     }
 
     // Load Accumulator
-    fn ldax_b(&mut self) {
+    fn ldax(&mut self) {
 
     }
 
-    // Load Accumulator
-    fn ldax_d(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_b(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_c(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_d(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_e(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_h(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_l(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_m(&mut self) {
-
-    }
-
-    // ADD Register or Memory To Accumulator
-    fn add_a(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_b(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_c(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_d(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_e(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_h(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_l(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_m(&mut self) {
-
-    }
-
-    // ADD Register or Memory to Accumulator with Carry
-    fn adc_a(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_b(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_c(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_d(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_e(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_h(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_l(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_m(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator
-    fn sub_a(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_b(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_c(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_d(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_e(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_h(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_l(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_m(&mut self) {
-
-    }
-
-    // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb_a(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_b(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_c(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_d(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_e(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_h(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_l(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_m(&mut self) {
-
-    }
-
-    // Logical and Register or Memory With Accumulator
-    fn ana_a(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_b(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_c(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_d(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_e(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_h(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_l(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_m(&mut self) {
-
-    }
-
-    // Logical Exclusive-Or Register or Memory With Accumulator (Zero Accumulator)
-    fn xra_a(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_b(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_c(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_d(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_e(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_h(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_l(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_m(&mut self) {
-
-    }
-
-    // Logical or Register or Memory With Accumulator
-    fn ora_a(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_b(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_c(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_d(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_e(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_h(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_l(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_m(&mut self) {
-
-    }
-
-    // Compare Register or Memory With Accumulator
-    fn cmp_a(&mut self) {
+    // ADD Register or Memory to Accumulator
+    fn add(&mut self, src: Operand8) {
 
     }
 
@@ -1741,106 +1142,6 @@ impl Intel8080 {
 
     }
 
-    // Push Data Onto Stack
-    fn push_b(&mut self) {
-
-    }
-
-    // Push Data Onto Stack
-    fn push_d(&mut self) {
-
-    }
-
-    // Push Data Onto Stack
-    fn push_h(&mut self) {
-
-    }
-
-    // Push Data Onto Stack
-    fn push_psw(&mut self) {
-
-    }
-
-    // Pop Data Off Stack
-    fn pop_b(&mut self) {
-
-    }
-
-    // Pop Data Off Stack
-    fn pop_d(&mut self) {
-
-    }
-
-    // Pop Data Off Stack
-    fn pop_h(&mut self) {
-
-    }
-
-    // Pop Data Off Stack
-    fn pop_psw(&mut self) {
-
-    }
-
-    // Double Add
-    fn dad_b(&mut self) {
-
-    }
-
-    // Double Add
-    fn dad_d(&mut self) {
-
-    }
-
-    // Double Add
-    fn dad_h(&mut self) {
-
-    }
-
-    // Double Add
-    fn dad_sp(&mut self) {
-
-    }
-
-    // Increment Register Pair
-    fn inx_b(&mut self) {
-
-    }
-
-    // Increment Register Pair
-    fn inx_d(&mut self) {
-
-    }
-
-    // Increment Register Pair
-    fn inx_h(&mut self) {
-
-    }
-
-    // Increment Register Pair
-    fn inx_sp(&mut self) {
-
-    }
-
-    // Decrement Register Pair
-    fn dcx_b(&mut self) {
-
-    }
-
-    // Decrement Register Pair
-    fn dcx_d(&mut self) {
-
-    }
-
-    // Decrement Register Pair
-    fn dcx_h(&mut self) {
-
-    }
-
-    // Decrement Register Pair
-    fn dcx_sp(&mut self) {
-
-    }
-
     // Exchange Registers
     fn xchg(&mut self) {
 
@@ -1856,103 +1157,43 @@ impl Intel8080 {
 
     }
 
-    // Move Immediate Data
-    fn lxi_b(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn lxi_d(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn lxi_h(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn lxi_sp(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_b(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_c(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_d(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_e(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_h(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_l(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_m(&mut self) {
-
-    }
-
-    // Move Immediate Data
-    fn mvi_a(&mut self) {
-
-    }
-
     // Add Immediate to Accumulator
-    fn adi(&mut self) {
+    fn adi(&mut self, imm: u8) {
 
     }
 
     // Add Immediate to Accumulator With Carry
-    fn aci(&mut self) {
+    fn aci(&mut self, imm: u8) {
 
     }
 
     // Subtract Immediate from Accumulator
-    fn sui(&mut self) {
+    fn sui(&mut self, imm: u8) {
 
     }
 
     // Subtract Immediate from Accumulator With Borrow
-    fn sbi(&mut self) {
+    fn sbi(&mut self, imm: u8) {
 
     }
 
     // And Immediate With Accumulator
-    fn ani(&mut self) {
+    fn ani(&mut self, imm: u8) {
 
     }
 
     // Exclusive-Or Immediate With Accumulator
-    fn xri(&mut self) {
+    fn xri(&mut self, imm: u8) {
 
     }
 
     // Or Immediate With Accumulator 
-    fn ori(&mut self) {
+    fn ori(&mut self, imm: u8) {
 
     }
 
     // Compare Immediate With Accumulator
-    fn cpi(&mut self) {
+    fn cpi(&mut self, im: u8) {
 
     }
 
