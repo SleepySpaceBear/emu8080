@@ -794,11 +794,23 @@ impl From<u8> for Operand16 {
     }
 }
 
+fn parity_even(val: u8) -> bool {
+   let val: u8 = val ^ (val >> 4);
+   let val: u8 = val ^ (val >> 2);
+   let val: u8 = val ^ (val >> 1);
+
+   return val == 0;
+}
+
 struct Intel8080 {
     registers: Registers
 }
 
 impl Intel8080 {
+    fn init(&mut self) {
+       self.registers.set_status(0x02); 
+    }
+
     fn do_instruction(&mut self, instruction: u8) {
         let instruction: Instruction = Instruction::from(instruction);   
         match instruction {
@@ -1068,14 +1080,35 @@ impl Intel8080 {
         }
     }
 
+    fn set_condition(&mut self, val: u8) {
+        let mut condition: u8 = 0x2;
+       
+        // set Zero bit
+        if val == 0 {
+            condition |= 0x40;
+        }
+        // set Sign bit 
+        else if (val & 0x80) != 0x0 {
+            condition |= 0x80;
+        }
+
+        // set Parity bit
+        if parity_even(val) {
+            condition |= 0x04;
+        }
+
+        self.registers.set_status(condition);
+    }
+
+
     // Set Carry
     fn stc(&mut self) {
-
+        self.registers.set_status(self.registers.status() | 0x1);
     }
 
     // Complement Carry
     fn cmc(&mut self) {
-
+        self.registers.set_status(self.registers.status() ^ 0x1);
     }
 
     // Increment Register or Memory
@@ -1083,7 +1116,7 @@ impl Intel8080 {
         let orig_val = self.get_src(reg);
         let new_val = orig_val.wrapping_add(1);
         self.write_dst(reg, new_val);
-        // TODO: Set flags
+        self.set_condition(new_val);
     }
 
     // Decrement Register or Memory
@@ -1091,7 +1124,7 @@ impl Intel8080 {
         let orig_val = self.get_src(reg);
         let new_val = orig_val.wrapping_sub(1);
         self.write_dst(reg, new_val);
-        // TODO: Set flags
+        self.set_condition(new_val);
     }
 
     fn cma(&mut self) {
