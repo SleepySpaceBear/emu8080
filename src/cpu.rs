@@ -1117,6 +1117,7 @@ impl Intel8080 {
         let new_val = orig_val.wrapping_add(1);
         self.write_dst(reg, new_val);
         self.set_condition(new_val);
+        // TODO: set carry bits
     }
 
     // Decrement Register or Memory
@@ -1125,6 +1126,7 @@ impl Intel8080 {
         let new_val = orig_val.wrapping_sub(1);
         self.write_dst(reg, new_val);
         self.set_condition(new_val);
+        // TODO: set carry bits
     }
 
     fn cma(&mut self) {
