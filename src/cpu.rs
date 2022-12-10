@@ -808,7 +808,7 @@ struct Intel8080 {
 
 impl Intel8080 {
     fn init(&mut self) {
-       self.registers.set_status(0x02); 
+    
     }
 
     fn do_instruction(&mut self, instruction: u8) {
@@ -1081,42 +1081,22 @@ impl Intel8080 {
     }
 
     fn set_condition(&mut self, val: u8, carry: bool, aux_carry: bool) {
-        let mut condition: u8 = 0x2;
-       
-        // set Zero bit
-        if val == 0 {
-            condition |= 0x40;
-        }
-        // set Sign bit 
-        else if (val & 0x80) != 0x0 {
-            condition |= 0x80;
-        }
-
-        // set Parity bit
-        if parity_even(val) {
-            condition |= 0x04;
-        }
-
-        if carry {
-            condition |= 0x1;
-        }
-
-        if aux_carry {
-            condition |= 0x10;
-        }
-
-        self.registers.set_status(condition);
+        self.registers.set_status_zero(val == 0);
+        self.registers.set_status_sign(val & 0x80 != 0);
+        self.registers.set_status_aux_carry(parity_even(val));
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
     }
 
 
     // Set Carry
     fn stc(&mut self) {
-        self.registers.set_status(self.registers.status() | 0x1);
+        self.registers.set_status_carry(true);
     }
 
     // Complement Carry
     fn cmc(&mut self) {
-        self.registers.set_status(self.registers.status() ^ 0x1);
+        self.registers.set_status_carry(!self.registers.status_carry());
     }
 
     // Increment Register or Memory

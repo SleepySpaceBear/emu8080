@@ -28,7 +28,7 @@ impl Registers {
             h: 0,
             l: 0,
             accumulator: 0,
-            status: 0
+            status: 0x2
         }
     }
 
@@ -149,7 +149,70 @@ impl Registers {
         self.status
     }
 
-    pub fn set_status(&mut self, val: u8) {
-        self.status = val 
+    pub fn status_carry(&self) -> bool {
+        return (self.status & 0x1) != 0; 
     }
+
+    pub fn set_status_carry(&self, carry: bool) {
+        if carry {
+            self.status |= 0x1;
+        }
+        else {
+            self.status &= !0x1;
+        }
+    }
+    
+    pub fn status_aux_carry(&self) -> bool {
+        return (self.status & 0x10) != 0; 
+    }
+
+    pub fn set_status_aux_carry(&self, aux_carry: bool) {
+        if aux_carry {
+            self.status |= 0x10;
+        }
+        else {
+            self.status &= !0x10;
+        }
+    }
+
+    pub fn status_zero(&self) -> bool {
+        return (self.status & 0x40) != 0; 
+    }
+
+    pub fn set_status_zero(&self, zero: bool) {
+        if zero {
+            self.status |= 0x40;
+        }
+        else {
+            self.status &= !0x40;
+        }
+    }
+    
+    pub fn status_parity(&self) -> bool {
+        return (self.status & 0x04) != 0; 
+    }
+
+    pub fn set_status_parity(&self, parity: bool) {
+        if parity {
+            self.status |= 0x04;
+        }
+        else {
+            self.status &= !0x04;
+        }
+    }
+    
+    pub fn status_sign(&self) -> bool {
+        return (self.status & 0x80) != 0; 
+    }
+
+    pub fn set_status_sign(&self, sign: bool) {
+        if sign {
+            self.status |= 0x80;
+        }
+        else {
+            self.status &= !0x80;
+        }
+    }
+
+
 }
