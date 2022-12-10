@@ -1128,12 +1128,12 @@ impl Intel8080 {
         let mut val: u8 = self.get_src(Operand8::RegA);
         
         let aux_carry = val & 0xF > 0x9;
-        if aux_carry || self.registers.status() & 0x10 != 0 {
+        if aux_carry || self.registers.status_aux_carry() {
             val += 0x6;
         }
 
         let carry = val & 0xF0 > 0x90;
-        if carry || self.registers.status() & 0x1 != 0 {
+        if carry || self.registers.status_carry() {
             val += 0x60
         }
 
