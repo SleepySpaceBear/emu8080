@@ -213,6 +213,4 @@ impl Registers {
             self.status &= !0x80;
         }
     }
-
-
 }
