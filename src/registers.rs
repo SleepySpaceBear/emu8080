@@ -153,7 +153,7 @@ impl Registers {
         return (self.status & 0x1) != 0; 
     }
 
-    pub fn set_status_carry(&self, carry: bool) {
+    pub fn set_status_carry(&mut self, carry: bool) {
         if carry {
             self.status |= 0x1;
         }
@@ -166,7 +166,7 @@ impl Registers {
         return (self.status & 0x10) != 0; 
     }
 
-    pub fn set_status_aux_carry(&self, aux_carry: bool) {
+    pub fn set_status_aux_carry(&mut self, aux_carry: bool) {
         if aux_carry {
             self.status |= 0x10;
         }
@@ -179,7 +179,7 @@ impl Registers {
         return (self.status & 0x40) != 0; 
     }
 
-    pub fn set_status_zero(&self, zero: bool) {
+    pub fn set_status_zero(&mut self, zero: bool) {
         if zero {
             self.status |= 0x40;
         }
@@ -192,7 +192,7 @@ impl Registers {
         return (self.status & 0x04) != 0; 
     }
 
-    pub fn set_status_parity(&self, parity: bool) {
+    pub fn set_status_parity(&mut self, parity: bool) {
         if parity {
             self.status |= 0x04;
         }
@@ -205,7 +205,7 @@ impl Registers {
         return (self.status & 0x80) != 0; 
     }
 
-    pub fn set_status_sign(&self, sign: bool) {
+    pub fn set_status_sign(&mut self, sign: bool) {
         if sign {
             self.status |= 0x80;
         }
