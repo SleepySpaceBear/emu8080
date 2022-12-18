@@ -890,42 +890,42 @@ impl Intel8080 {
             Instruction::MOV_A_H => { self.mov(Operand8::RegA, Operand8::RegH,  memory) },
             Instruction::MOV_A_L => { self.mov(Operand8::RegA, Operand8::RegL,  memory) },
             Instruction::MOV_A_M => { self.mov(Operand8::RegA, Operand8::Memory, memory) },
-            Instruction::STAX_B => { },
-            Instruction::STAX_D => { },
-            Instruction::LDAX_B => { },
-            Instruction::LDAX_D => { },
-            Instruction::ADD_B => { },
-            Instruction::ADD_C => { },
-            Instruction::ADD_D => { },
-            Instruction::ADD_E => { },
-            Instruction::ADD_H => { },
-            Instruction::ADD_L => { },
-            Instruction::ADD_M => { },
-            Instruction::ADD_A => { },
-            Instruction::ADC_B => { },
-            Instruction::ADC_C => { },
-            Instruction::ADC_D => { },
-            Instruction::ADC_E => { },
-            Instruction::ADC_H => { },
-            Instruction::ADC_L => { },
-            Instruction::ADC_M => { },
-            Instruction::ADC_A => { },
-            Instruction::SUB_B => { },
-            Instruction::SUB_C => { },
-            Instruction::SUB_D => { },
-            Instruction::SUB_E => { },
-            Instruction::SUB_H => { },
-            Instruction::SUB_L => { },
-            Instruction::SUB_M => { },
-            Instruction::SUB_A => { },
-            Instruction::SBB_B => { },
-            Instruction::SBB_C => { },
-            Instruction::SBB_D => { },
-            Instruction::SBB_E => { },
-            Instruction::SBB_H => { },
-            Instruction::SBB_L => { },
-            Instruction::SBB_M => { },
-            Instruction::SBB_A => { },
+            Instruction::STAX_B => { self.stax(Operand16::RegPairB, memory) },
+            Instruction::STAX_D => { self.stax(Operand16::RegPairD, memory) },
+            Instruction::LDAX_B => { self.ldax(Operand16::RegPairB, memory) },
+            Instruction::LDAX_D => { self.ldax(Operand16::RegPairD, memory)},
+            Instruction::ADD_B => { self.add(Operand8::RegB, memory) },
+            Instruction::ADD_C => { self.add(Operand8::RegC, memory) },
+            Instruction::ADD_D => { self.add(Operand8::RegD, memory) },
+            Instruction::ADD_E => { self.add(Operand8::RegE, memory) },
+            Instruction::ADD_H => { self.add(Operand8::RegH, memory) },
+            Instruction::ADD_L => { self.add(Operand8::RegL, memory) },
+            Instruction::ADD_M => { self.add(Operand8::Memory, memory) },
+            Instruction::ADD_A => { self.add(Operand8::RegA, memory) },
+            Instruction::ADC_B => { self.adc(Operand8::RegB, memory) },
+            Instruction::ADC_C => { self.adc(Operand8::RegC, memory) },
+            Instruction::ADC_D => { self.adc(Operand8::RegD, memory) },
+            Instruction::ADC_E => { self.adc(Operand8::RegE, memory) },
+            Instruction::ADC_H => { self.adc(Operand8::RegH, memory) },
+            Instruction::ADC_L => { self.adc(Operand8::RegL, memory) },
+            Instruction::ADC_M => { self.adc(Operand8::Memory, memory) },
+            Instruction::ADC_A => { self.adc(Operand8::RegA, memory) },
+            Instruction::SUB_B => { self.sub(Operand8::RegB, memory) },
+            Instruction::SUB_C => { self.sub(Operand8::RegC, memory) },
+            Instruction::SUB_D => { self.sub(Operand8::RegD, memory) },
+            Instruction::SUB_E => { self.sub(Operand8::RegE, memory) },
+            Instruction::SUB_H => { self.sub(Operand8::RegH, memory) },
+            Instruction::SUB_L => { self.sub(Operand8::RegL, memory) },
+            Instruction::SUB_M => { self.sub(Operand8::Memory, memory) },
+            Instruction::SUB_A => { self.sub(Operand8::RegA, memory) },
+            Instruction::SBB_B => { self.sbb(Operand8::RegB, memory) },
+            Instruction::SBB_C => { self.sbb(Operand8::RegC, memory) },
+            Instruction::SBB_D => { self.sbb(Operand8::RegD, memory) },
+            Instruction::SBB_E => { self.sbb(Operand8::RegE, memory) },
+            Instruction::SBB_H => { self.sbb(Operand8::RegH, memory) },
+            Instruction::SBB_L => { self.sbb(Operand8::RegL, memory) },
+            Instruction::SBB_M => { self.sbb(Operand8::Memory, memory) },
+            Instruction::SBB_A => { self.sbb(Operand8::RegA, memory)  },
             Instruction::ANA_B => { },
             Instruction::ANA_C => { },
             Instruction::ANA_D => { },
@@ -1146,17 +1146,82 @@ impl Intel8080 {
     }
 
     // Store Accumulator
-    fn stax(&mut self, memory: &mut Vec<u8>) {
-
+    fn stax(&mut self, dst: Operand16, memory: &mut Vec<u8>) {
+        match dst {
+            Operand16::RegPairB => {
+                memory[self.registers.pair_b() as usize] = self.registers.accumulator();
+            },
+            Operand16::RegPairD => {
+                memory[self.registers.pair_d() as usize] = self.registers.accumulator();
+            },
+            _ => {}
+        }
     }
 
     // Load Accumulator
-    fn ldax(&mut self, memory: &mut Vec<u8>) {
-
+    fn ldax(&mut self, dst: Operand16, memory: &mut Vec<u8>) {
+        match dst {
+            Operand16::RegPairB => {
+                self.registers.set_accumulator(memory[self.registers.pair_b() as usize]);
+            },
+            Operand16::RegPairD => {
+                self.registers.set_accumulator(memory[self.registers.pair_d() as usize]);
+            },
+            _ => {}
+        }
     }
 
     // ADD Register or Memory to Accumulator
     fn add(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+        let old_val: u8 = self.registers.accumulator();
+        let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory)); 
+        
+        let carry: bool = old_val > new_val;
+        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+
+        self.registers.set_accumulator(new_val as u8);
+        self.set_condition(new_val as u8, carry, aux_carry)
+    }
+
+    // ADD Register or Memory to Accumulator With Carry
+    fn adc(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+        let old_val: u8 = self.registers.accumulator();
+        let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory))
+            .wrapping_add(self.registers.status_carry() as u8); 
+        
+        let carry: bool = old_val > new_val;
+        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+
+        self.registers.set_accumulator(new_val);
+        self.set_condition(new_val, carry, aux_carry)
+    }
+
+    // Subtract Register or Memory From Accumulator
+    fn sub(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+        let old_val = self.registers.accumulator();
+        let new_val = old_val.wrapping_add(
+            (!self.get_src(src, memory)).wrapping_add(1));
+
+        let carry: bool = old_val > new_val;
+        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+
+        self.registers.set_accumulator(new_val);
+        self.set_condition(new_val, carry, aux_carry)
+    } 
+
+    // Subtract Register or Memory From Accumulator With Borrow
+    fn sbb(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+        let old_val = self.registers.accumulator();
+        // new_val = old_val + (!(src + carry bit) + 1)
+        let new_val = old_val.wrapping_add(
+            (!self.get_src(src, memory).wrapping_add(self.registers.status_carry() as u8))
+            .wrapping_add(1));
+
+        let carry: bool = old_val > new_val;
+        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+
+        self.registers.set_accumulator(new_val);
+        self.set_condition(new_val, carry, aux_carry)
 
     }
 
