@@ -1,4 +1,6 @@
+use std::num::Wrapping;
 use crate::registers::Registers as Registers;
+use crate::utils::*;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
@@ -794,14 +796,6 @@ impl From<u8> for Operand16 {
     }
 }
 
-fn parity_even(val: u8) -> bool {
-   let val: u8 = val ^ (val >> 4);
-   let val: u8 = val ^ (val >> 2);
-   let val: u8 = val ^ (val >> 1);
-
-   return val == 0;
-}
-
 struct Intel8080 {
     registers: Registers
 }
@@ -1176,8 +1170,8 @@ impl Intel8080 {
         let old_val: u8 = self.registers.accumulator();
         let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory)); 
         
-        let carry: bool = old_val > new_val;
-        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+        let carry: bool = check_carry(old_val, new_val);
+        let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val as u8);
         self.set_condition(new_val as u8, carry, aux_carry)
@@ -1189,8 +1183,8 @@ impl Intel8080 {
         let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory))
             .wrapping_add(self.registers.status_carry() as u8); 
         
-        let carry: bool = old_val > new_val;
-        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+        let carry: bool = check_carry(old_val, new_val);
+        let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
         self.set_condition(new_val, carry, aux_carry)
@@ -1199,11 +1193,10 @@ impl Intel8080 {
     // Subtract Register or Memory From Accumulator
     fn sub(&mut self, src: Operand8, memory: &mut Vec<u8>) {
         let old_val = self.registers.accumulator();
-        let new_val = old_val.wrapping_add(
-            (!self.get_src(src, memory)).wrapping_add(1));
+        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
 
-        let carry: bool = old_val > new_val;
-        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+        let carry: bool = check_carry(old_val, new_val);
+        let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
         self.set_condition(new_val, carry, aux_carry)
@@ -1212,17 +1205,47 @@ impl Intel8080 {
     // Subtract Register or Memory From Accumulator With Borrow
     fn sbb(&mut self, src: Operand8, memory: &mut Vec<u8>) {
         let old_val = self.registers.accumulator();
-        // new_val = old_val + (!(src + carry bit) + 1)
-        let new_val = old_val.wrapping_add(
-            (!self.get_src(src, memory).wrapping_add(self.registers.status_carry() as u8))
-            .wrapping_add(1));
+        let new_val = twos_complement(self.get_src(src, memory)
+            .wrapping_add(self.registers.status_carry() as u8));
+        let new_val = old_val.wrapping_add(new_val);
 
-        let carry: bool = old_val > new_val;
-        let aux_carry: bool = (old_val & 0xF) > ((new_val as u8) & 0xF);
+        let carry: bool = check_carry(old_val, new_val);
+        let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
         self.set_condition(new_val, carry, aux_carry)
+    }
 
+    // Logical and Register or Memory With Accumulator
+    fn ana(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+        let val: u8 = self.registers.accumulator() & self.get_src(src, memory);
+        self.set_condition(val, false, false);
+        self.registers.set_accumulator(val);
+    }
+
+    // Logical Exclusive-Or Register or Memory with Accumulator
+    fn xra(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+        let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
+        self.set_condition(val, false, false);
+        self.registers.set_accumulator(val);
+    }
+
+    // Logical or Register or Memory with Accumulator
+    fn ora(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+        let val: u8 = self.registers.accumulator() | self.get_src(src, memory);
+        self.set_condition(val, false, false);
+        self.registers.set_accumulator(val);
+    }
+
+    // Compare Register or Memory with Accumulator
+    fn cmp(&mut self, src:Operand8, memory: &mut Vec<u8>) {
+        let old_val = self.registers.accumulator();
+        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
+
+        let carry: bool = check_carry(old_val, new_val);
+        let aux_carry: bool = check_aux_carry(old_val, new_val);
+
+        self.set_condition(new_val, carry, aux_carry)
     }
 
     // Rotate Accumulator Left
