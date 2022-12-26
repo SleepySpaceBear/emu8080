@@ -1,8 +1,3 @@
-union RegisterPair {
-    as_u16: u16,
-    as_u8: [u8; 2],
-}
-
 pub struct Registers {
     pc: u16, // Program Counter
     sp: u16, // Stack Pointer
