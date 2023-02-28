@@ -757,7 +757,8 @@ enum Operand8 {
     RegH = 4,
     RegL = 5,
     Memory = 6,
-    RegA = 7
+    RegA = 7,
+    Immediate = 8
 }
 
 impl From<u8> for Operand8 {
@@ -781,7 +782,8 @@ enum Operand16 {
     RegPairB = 0,
     RegPairD = 1,
     RegPairH = 2,
-    PSW = 3
+    PSW = 3,
+    Immediate = 4
 }
 
 impl From<u8> for Operand16 {
@@ -951,18 +953,18 @@ impl Intel8080 {
             Instruction::CMP_L => { self.cmp(Operand8::RegL, memory) },
             Instruction::CMP_M => { self.cmp(Operand8::Memory, memory) },
             Instruction::CMP_A => { self.cmp(Operand8::RegA, memory) },
-            Instruction::RLC => { },
-            Instruction::RRC => { },
-            Instruction::RAL => { },
-            Instruction::RAR => { },
-            Instruction::PUSH_B => { },
-            Instruction::PUSH_D => { },
-            Instruction::PUSH_H => { },
-            Instruction::PUSH_PSW => { },
-            Instruction::POP_B => { },
-            Instruction::POP_D => { },
-            Instruction::POP_H => { },
-            Instruction::POP_PSW => { },
+            Instruction::RLC => { self.rlc() },
+            Instruction::RRC => { self.rrc() },
+            Instruction::RAL => { self.ral() },
+            Instruction::RAR => { self.rar() },
+            Instruction::PUSH_B => { self.push(Operand16::RegPairB, memory) },
+            Instruction::PUSH_D => { self.push(Operand16::RegPairD, memory) },
+            Instruction::PUSH_H => { self.push(Operand16::RegPairH, memory) },
+            Instruction::PUSH_PSW => { self.push(Operand16::PSW, memory) },
+            Instruction::POP_B => { self.pop(Operand16::RegPairB, memory) },
+            Instruction::POP_D => { self.pop(Operand16::RegPairD, memory) },
+            Instruction::POP_H => { self.pop(Operand16::RegPairH, memory) },
+            Instruction::POP_PSW => { self.pop(Operand16::PSW, memory) },
             Instruction::DAD_B => { },
             Instruction::DAD_D => { },
             Instruction::DAD_H => { },
@@ -1056,7 +1058,8 @@ impl Intel8080 {
             Operand8::RegH => { return self.registers.h() },
             Operand8::RegL => { return self.registers.l() },
             Operand8::Memory => { return memory[self.registers.pair_h() as usize]; }
-            Operand8::RegA => { return self.registers.accumulator(); }
+            Operand8::RegA => { return self.registers.accumulator(); },
+            Operand8::Immediate => {}
         }
     }
 
@@ -1068,9 +1071,28 @@ impl Intel8080 {
             Operand8::RegE => { self.registers.set_e(val) },
             Operand8::RegH => { self.registers.set_h(val) },
             Operand8::RegL => { self.registers.set_l(val) },
-            Operand8::Memory => { memory[self.registers.pair_h() as usize] = val; }
-            Operand8::RegA => { self.registers.set_accumulator(val) }
+            Operand8::Memory => { memory[self.registers.pair_h() as usize] = val; },
+            Operand8::RegA => { self.registers.set_accumulator(val) },
         }
+    }
+
+    fn get_src_16(&self, src: Operand16) -> u16 {
+        match src {
+            Operand16::PSW => { self.registers.psw() },
+            Operand16::RegPairB => { self.registers.pair_b() },
+            Operand16::RegPairD => { self.registers.pair_d() },
+            Operand16::RegPairH => { self.registers.pair_h() }
+        }
+    }
+
+    fn write_dst_16(&mut self, src: Operand16, val: u16) {
+        match src {
+            Operand16::PSW => { self.registers.set_psw(val) },
+            Operand16::RegPairB => { self.registers.set_pair_b(val) },
+            Operand16::RegPairD => { self.registers.set_pair_d(val) },
+            Operand16::RegPairH => { self.registers.set_pair_h(val) }
+        }
+
     }
 
     fn set_condition(&mut self, val: u8, carry: bool, aux_carry: bool) {
@@ -1249,37 +1271,121 @@ impl Intel8080 {
 
     // Rotate Accumulator Left
     fn rlc(&mut self) {
-
+        let val: u8 = self.registers.accumulator();
+        
+        // check left-most bit
+        if val & 0x80 != 0 {
+            self.registers.set_status_carry(true);        
+        }
+        else {
+            self.registers.set_status_carry(false);
+        }
+       
+        // shift left and set right-most bit to the previous left-most bit
+        let val: u8 = (val << 1) | if self.registers.status_carry() {1} else {0};
+        
+        self.registers.set_accumulator(val);
     }
 
     // Rotate Accumulator Right
     fn rrc(&mut self) {
-
+        let val: u8 = self.registers.accumulator();
+        
+        // check right-most bit
+        if val & 0x01 != 0 {
+            self.registers.set_status_carry(true);        
+        }
+        else {
+            self.registers.set_status_carry(false);
+        }
+       
+        // shift right and set left-most bit to the previous right-most bit
+        let val: u8 = (val >> 1) | if self.registers.status_carry() {0x80} else {0};
+        
+        self.registers.set_accumulator(val);
     }
 
     // Rotate Accumulator Left Through Carry
     fn ral(&mut self) {
+        let val: u8 = self.registers.accumulator();
+        let old_carry: bool = self.registers.status_carry();
 
+        // check left-most bit
+        if val & 0x80 != 0 {
+            self.registers.set_status_carry(true);        
+        }
+        else {
+            self.registers.set_status_carry(false);
+        }
+       
+        // shift left and set right-most bit to the previous left-most bit
+        let val: u8 = (val << 1) | if old_carry {1} else {0};
+        
+        self.registers.set_accumulator(val);
     }
 
     // Rotate Accumulator Right Through Carry
     fn rar(&mut self) {
+        let val: u8 = self.registers.accumulator();
+        let old_carry: bool = self.registers.status_carry();
+
+        // check right-most bit
+        if val & 0x01 != 0 {
+            self.registers.set_status_carry(true);        
+        }
+        else {
+            self.registers.set_status_carry(false);
+        }
+       
+        // shift right and set left-most bit to the old carry bit value
+        let val: u8 = (val >> 1) | if old_carry {0x80} else {0};
+        
+        self.registers.set_accumulator(val);
+
+    }
+
+    // Push Data Onto Stack
+    fn push(&mut self, src: Operand16, memory: &mut Vec<u8>) {
+        
+    }
+
+    // Pop Data Off Stack
+    fn pop(&mut self, src: Operand16, memory: &mut Vec<u8>) {
+
+    }
+
+    // Double Add
+    fn dad(&mut self, src: Operand16) {
+
+    }
+
+    // Increment Register Pair
+    fn inx(&mut self, src: Operand16) {
+
+    }
+
+    // Decrement Register Pair
+    fn dcx(&mut self, src: Operand16) {
 
     }
 
     // Exchange Registers
     fn xchg(&mut self) {
-
+        let temp = self.registers.pair_h();
+        self.registers.set_pair_h(self.registers.pair_d());
+        self.registers.set_pair_d(temp);
     }
 
     // Exchange Stack
-    fn xthl(&mut self) {
-
+    fn xthl(&mut self, memory: &mut Vec<u8>) {
+        let temp = self.registers.l();
+        self.registers.set_l(memory[self.registers.sp() as usize + 1]);
+        memory[self.registers.sp() as usize + 1] = temp;
     }
 
     // Load SP From H and L
     fn sphl(&mut self) {
-
+        self.registers.set_sp(self.registers.pair_h());
     }
 
     // Add Immediate to Accumulator
