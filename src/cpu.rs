@@ -1376,7 +1376,30 @@ impl Intel8080 {
 
     // Pop Data Off Stack
     fn pop(&mut self, dst: Operand16, memory: &Vec<u8>) {
+        let first_register = memory[(self.registers.sp() + 1) as usize];
+        let second_register = memory[(self.registers.sp()) as usize];
 
+        match dst {
+            Operand16::RegPairB => {
+                self.registers.set_b(first_register);
+                self.registers.set_c(second_register);
+            },
+            Operand16::RegPairD => {
+                self.registers.set_d(first_register);
+                self.registers.set_e(second_register);
+            },
+            Operand16::RegPairH => {
+                self.registers.set_h(first_register);
+                self.registers.set_l(second_register);
+            },
+            Operand16::PSW => {
+                self.registers.set_status(first_register);
+                self.registers.set_accumulator(second_register);
+            },
+            _ => { }
+        }
+
+        self.registers.set_sp(self.registers.sp() + 2);
     }
 
     // Double Add

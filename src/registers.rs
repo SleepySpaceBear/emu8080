@@ -1,5 +1,15 @@
 use crate::utils::make_u16;
 
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[repr(u8)]
+enum StatusFlags {
+    SignBit = 0x80,
+    ZeroBit = 0x40,
+    AuxCarryBit = 0x10,
+    ParityBit = 0x04,
+    CarryBit = 0x01
+}
+
 pub struct Registers {
     pc: u16, // Program Counter
     sp: u16, // Stack Pointer
@@ -150,29 +160,33 @@ impl Registers {
         self.status
     }
 
+    pub fn set_status(&self, val: u8) {
+        self.status = 0x2 | (val & 0xC5);
+    }
+
     pub fn status_carry(&self) -> bool {
-        return (self.status & 0x1) != 0; 
+        return (self.status & (StatusFlags::CarryBit as u8)) != 0; 
     }
 
     pub fn set_status_carry(&mut self, carry: bool) {
         if carry {
-            self.status |= 0x1;
+            self.status |= StatusFlags::CarryBit as u8;
         }
         else {
-            self.status &= !0x1;
+            self.status &= !(StatusFlags::CarryBit as u8);
         }
     }
     
     pub fn status_aux_carry(&self) -> bool {
-        return (self.status & 0x10) != 0; 
+        return (self.status & (StatusFlags::AuxCarryBit as u8)) != 0; 
     }
 
     pub fn set_status_aux_carry(&mut self, aux_carry: bool) {
         if aux_carry {
-            self.status |= 0x10;
+            self.status |= StatusFlags::AuxCarryBit as u8;
         }
         else {
-            self.status &= !0x10;
+            self.status &= !(StatusFlags::AuxCarryBit as u8);
         }
     }
 
@@ -182,36 +196,36 @@ impl Registers {
 
     pub fn set_status_zero(&mut self, zero: bool) {
         if zero {
-            self.status |= 0x40;
+            self.status |= StatusFlags::ZeroBit as u8;
         }
         else {
-            self.status &= !0x40;
+            self.status &= !(StatusFlags::ZeroBit as u8);
         }
     }
     
     pub fn status_parity(&self) -> bool {
-        return (self.status & 0x04) != 0; 
+        return (self.status & (StatusFlags::ParityBit as u8)) != 0; 
     }
 
     pub fn set_status_parity(&mut self, parity: bool) {
         if parity {
-            self.status |= 0x04;
+            self.status |= StatusFlags::ParityBit as u8;
         }
         else {
-            self.status &= !0x04;
+            self.status &= !(StatusFlags::ParityBit as u8);
         }
     }
     
     pub fn status_sign(&self) -> bool {
-        return (self.status & 0x80) != 0; 
+        return (self.status & (StatusFlags::SignBit as u8)) != 0; 
     }
 
     pub fn set_status_sign(&mut self, sign: bool) {
         if sign {
-            self.status |= 0x80;
+            self.status |= StatusFlags::SignBit as u8;
         }
         else {
-            self.status &= !0x80;
+            self.status &= !(StatusFlags::SignBit as u8);
         }
     }
 
