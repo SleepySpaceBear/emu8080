@@ -771,7 +771,8 @@ impl From<u8> for Operand8 {
             4 => return Operand8::RegH,
             5 => return Operand8::RegL,
             6 => return Operand8::Memory,
-            _ => return Operand8::RegA
+            7 => return Operand8::RegA,
+            _ => return Operand8::Immediate
         }
     }
 }
@@ -792,7 +793,8 @@ impl From<u8> for Operand16 {
             0 => return Operand16::RegPairB,
             1 => return Operand16::RegPairD,
             2 => return Operand16::RegPairH,
-            _ => return Operand16::PSW
+            3 => return Operand16::PSW,
+            _ => return Operand16::Immediate
         }
     }
 }
@@ -806,8 +808,15 @@ impl Intel8080 {
     
     }
 
-    fn do_instruction(&mut self, memory: &mut Vec<u8>) {
+    fn fetch_instruction(&mut self, memory: &Vec<u8>) -> Instruction {
         let instruction: Instruction = Instruction::from(memory[self.registers.pc() as usize]);   
+        self.registers.set_pc(self.registers.pc() + 1);
+        return instruction
+    }
+
+    fn do_instruction(&mut self, memory: &mut Vec<u8>) {
+        let instruction = self.fetch_instruction(memory);
+
         match instruction {
             Instruction::STC => { self.stc() },
             Instruction::CMC => { self.cmc() },
@@ -984,14 +993,14 @@ impl Intel8080 {
             Instruction::LXI_D => { },
             Instruction::LXI_H => { },
             Instruction::LXI_SP => { },
-            Instruction::MVI_B => { },
-            Instruction::MVI_C => { },
-            Instruction::MVI_D => { },
-            Instruction::MVI_E => { },
-            Instruction::MVI_H => { },
-            Instruction::MVI_L => { },
-            Instruction::MVI_M => { },
-            Instruction::MVI_A => { },
+            Instruction::MVI_B => { self.fetch_instruction(memory); self.mov(Operand8::RegB, Operand8::Immediate, memory) },
+            Instruction::MVI_C => { self.fetch_instruction(memory); self.mov(Operand8::RegC, Operand8::Immediate, memory) },
+            Instruction::MVI_D => { self.fetch_instruction(memory); self.mov(Operand8::RegD, Operand8::Immediate, memory) },
+            Instruction::MVI_E => { self.fetch_instruction(memory); self.mov(Operand8::RegE, Operand8::Immediate, memory) },
+            Instruction::MVI_H => { self.fetch_instruction(memory); self.mov(Operand8::RegH, Operand8::Immediate, memory) },
+            Instruction::MVI_L => { self.fetch_instruction(memory); self.mov(Operand8::RegL, Operand8::Immediate, memory) },
+            Instruction::MVI_M => { self.fetch_instruction(memory); self.mov(Operand8::Memory, Operand8::Immediate, memory) },
+            Instruction::MVI_A => { self.fetch_instruction(memory); self.mov(Operand8::RegA, Operand8::Immediate, memory) },
             Instruction::ADI => { },
             Instruction::ACI => { },
             Instruction::SUI => { },
@@ -1049,17 +1058,19 @@ impl Intel8080 {
         }
     }
  
-    fn get_src(&self, src: Operand8, memory: &mut Vec<u8>) -> u8 {
+    fn get_src(&mut self, src: Operand8, memory: &Vec<u8>) -> u8 {
         match src {
-            Operand8::RegB => { return self.registers.b() },
-            Operand8::RegC => { return self.registers.c() },
-            Operand8::RegD => { return self.registers.d() },
-            Operand8::RegE => { return self.registers.e() },
-            Operand8::RegH => { return self.registers.h() },
-            Operand8::RegL => { return self.registers.l() },
-            Operand8::Memory => { return memory[self.registers.pair_h() as usize]; }
-            Operand8::RegA => { return self.registers.accumulator(); },
-            Operand8::Immediate => {}
+            Operand8::RegB => { self.registers.b() },
+            Operand8::RegC => { self.registers.c() },
+            Operand8::RegD => { self.registers.d() },
+            Operand8::RegE => { self.registers.e() },
+            Operand8::RegH => { self.registers.h() },
+            Operand8::RegL => { self.registers.l() },
+            Operand8::Memory => { memory[self.registers.pair_h() as usize] }
+            Operand8::RegA => { self.registers.accumulator() },
+            Operand8::Immediate => { 
+                memory[(self.registers.pc() - 1) as usize]
+            }
         }
     }
 
@@ -1073,15 +1084,20 @@ impl Intel8080 {
             Operand8::RegL => { self.registers.set_l(val) },
             Operand8::Memory => { memory[self.registers.pair_h() as usize] = val; },
             Operand8::RegA => { self.registers.set_accumulator(val) },
+            Operand8::Immediate => {} 
         }
     }
 
-    fn get_src_16(&self, src: Operand16) -> u16 {
+    fn get_src_16(&mut self, src: Operand16, memory: &Vec<u8>) -> u16 {
         match src {
             Operand16::PSW => { self.registers.psw() },
             Operand16::RegPairB => { self.registers.pair_b() },
             Operand16::RegPairD => { self.registers.pair_d() },
-            Operand16::RegPairH => { self.registers.pair_h() }
+            Operand16::RegPairH => { self.registers.pair_h() },
+            Operand16::Immediate => { 
+                make_u16(memory[(self.registers.pc() - 1) as usize], 
+                         memory[(self.registers.pc() - 2) as usize])
+            }
         }
     }
 
@@ -1091,6 +1107,7 @@ impl Intel8080 {
             Operand16::RegPairB => { self.registers.set_pair_b(val) },
             Operand16::RegPairD => { self.registers.set_pair_d(val) },
             Operand16::RegPairH => { self.registers.set_pair_h(val) }
+            Operand16::Immediate => {}
         }
 
     }
@@ -1157,7 +1174,8 @@ impl Intel8080 {
 
     // Move
     fn mov(&mut self, src: Operand8, dst: Operand8, memory: &mut Vec<u8>) {
-        self.write_dst(dst, self.get_src(src, memory), memory);
+        let src = self.get_src(src, memory);
+        self.write_dst(dst, src, memory);
     }
 
     // Store Accumulator
@@ -1310,16 +1328,11 @@ impl Intel8080 {
         let val: u8 = self.registers.accumulator();
         let old_carry: bool = self.registers.status_carry();
 
-        // check left-most bit
-        if val & 0x80 != 0 {
-            self.registers.set_status_carry(true);        
-        }
-        else {
-            self.registers.set_status_carry(false);
-        }
+        // set carry to left-most bit
+        self.registers.set_status_carry(val & 0x80 != 0);        
        
         // shift left and set right-most bit to the previous left-most bit
-        let val: u8 = (val << 1) | if old_carry {1} else {0};
+        let val: u8 = (val << 1) | (if old_carry {1} else {0});
         
         self.registers.set_accumulator(val);
     }
@@ -1329,28 +1342,40 @@ impl Intel8080 {
         let val: u8 = self.registers.accumulator();
         let old_carry: bool = self.registers.status_carry();
 
-        // check right-most bit
-        if val & 0x01 != 0 {
-            self.registers.set_status_carry(true);        
-        }
-        else {
-            self.registers.set_status_carry(false);
-        }
+        // set carry to right most bit
+        self.registers.set_status_carry(val & 0x01 != 0);        
        
         // shift right and set left-most bit to the old carry bit value
-        let val: u8 = (val >> 1) | if old_carry {0x80} else {0};
+        let val: u8 = (val >> 1) | (if old_carry {0x80} else {0});
         
         self.registers.set_accumulator(val);
-
     }
 
     // Push Data Onto Stack
     fn push(&mut self, src: Operand16, memory: &mut Vec<u8>) {
+        let first_register = match src {
+            Operand16::RegPairB => { self.registers.b() },
+            Operand16::RegPairD => { self.registers.d() },
+            Operand16::RegPairH => { self.registers.h() },
+            Operand16::PSW => { self.registers.status() },
+            Operand16::Immediate => { 0 }
+        };
         
+        let second_register = match src {
+            Operand16::RegPairB => { self.registers.c() },
+            Operand16::RegPairD => { self.registers.e() },
+            Operand16::RegPairH => { self.registers.l() },
+            Operand16::PSW => { self.registers.accumulator() },
+            Operand16::Immediate => { 0 }
+        };
+
+        memory[(self.registers.sp() - 1) as usize] = first_register;
+        memory[(self.registers.sp() - 2) as usize] = second_register;
+        self.registers.set_sp(self.registers.sp() - 2);
     }
 
     // Pop Data Off Stack
-    fn pop(&mut self, src: Operand16, memory: &mut Vec<u8>) {
+    fn pop(&mut self, dst: Operand16, memory: &Vec<u8>) {
 
     }
 
@@ -1386,46 +1411,6 @@ impl Intel8080 {
     // Load SP From H and L
     fn sphl(&mut self) {
         self.registers.set_sp(self.registers.pair_h());
-    }
-
-    // Add Immediate to Accumulator
-    fn adi(&mut self, imm: u8) {
-
-    }
-
-    // Add Immediate to Accumulator With Carry
-    fn aci(&mut self, imm: u8) {
-
-    }
-
-    // Subtract Immediate from Accumulator
-    fn sui(&mut self, imm: u8) {
-
-    }
-
-    // Subtract Immediate from Accumulator With Borrow
-    fn sbi(&mut self, imm: u8) {
-
-    }
-
-    // And Immediate With Accumulator
-    fn ani(&mut self, imm: u8) {
-
-    }
-
-    // Exclusive-Or Immediate With Accumulator
-    fn xri(&mut self, imm: u8) {
-
-    }
-
-    // Or Immediate With Accumulator 
-    fn ori(&mut self, imm: u8) {
-
-    }
-
-    // Compare Immediate With Accumulator
-    fn cpi(&mut self, imm: u8) {
-
     }
 
     // Store Accumulator Direct

@@ -22,3 +22,7 @@ pub fn parity_even(val: u8) -> bool {
 pub fn twos_complement(val: u8) -> u8 {
     return (!val).wrapping_add(1)
 }
+
+pub fn make_u16(higher_order: u8, lower_order: u8) -> u16 {
+    return ((higher_order as u16) << 8) | (lower_order as u16)
+}

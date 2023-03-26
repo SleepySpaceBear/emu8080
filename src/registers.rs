@@ -1,3 +1,5 @@
+use crate::utils::make_u16;
+
 pub struct Registers {
     pc: u16, // Program Counter
     sp: u16, // Stack Pointer
@@ -8,7 +10,9 @@ pub struct Registers {
     h: u8,
     l: u8,
     accumulator: u8,
-    status: u8
+    status: u8,
+    w: u8,
+    z: u8
 }
 
 impl Registers {
@@ -23,7 +27,9 @@ impl Registers {
             h: 0,
             l: 0,
             accumulator: 0,
-            status: 0x2
+            status: 0x2,
+            w: 0,
+            z: 0
         }
     }
 
@@ -46,7 +52,7 @@ impl Registers {
 
 
     pub fn pair_b(&self) -> u16 {
-        ((self.b as u16) << 8) + self.c as u16
+        make_u16(self.b, self.c)
     }
 
     pub fn set_pair_b(&mut self, val: u16) {
@@ -72,7 +78,7 @@ impl Registers {
 
 
     pub fn pair_d(&self) -> u16 {
-        ((self.d as u16) << 8) + self.e as u16
+        make_u16(self.d, self.e)
     }
 
     pub fn set_pair_d(&mut self, val: u16) {
@@ -98,7 +104,7 @@ impl Registers {
 
 
     pub fn pair_h(&self) -> u16 {
-        ((self.h as u16) << 8) + self.l as u16
+        make_u16(self.h, self.l)
     }
 
     pub fn set_pair_h(&mut self, val: u16) {
@@ -124,7 +130,7 @@ impl Registers {
 
 
     pub fn psw(&self) -> u16 {
-        ((self.accumulator as u16) << 8) + self.status as u16
+        make_u16(self.accumulator, self.status)
     }
 
     pub fn set_psw(&mut self, val: u16) {
@@ -207,5 +213,21 @@ impl Registers {
         else {
             self.status &= !0x80;
         }
+    }
+
+    pub fn w(&self) -> u8 {
+       self.w 
+    }
+
+    pub fn set_w(&mut self, val: u8) {
+        self.w = val;
+    }
+    
+    pub fn z(&self) -> u8 {
+       self.z 
+    }
+
+    pub fn set_z(&mut self, val: u8) {
+        self.z = val;
     }
 }
