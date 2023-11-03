@@ -244,4 +244,8 @@ impl Registers {
     pub fn set_z(&mut self, val: u8) {
         self.z = val;
     }
+
+    pub fn pair_w(&self) -> u16 {
+       make_u16(self.w(), self.z())
+    }
 }
