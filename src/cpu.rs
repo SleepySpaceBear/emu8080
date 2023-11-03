@@ -993,14 +993,14 @@ impl Intel8080 {
             Instruction::LXI_D => { self.lxi(Operand16::RegPairD, memory) },
             Instruction::LXI_H => { self.lxi(Operand16::RegPairH, memory) },
             Instruction::LXI_SP => { self.lxi(Operand16::PSW, memory) },
-            Instruction::MVI_B => { self.fetch_instruction(memory); self.mov(Operand8::RegB, Operand8::Immediate, memory) },
-            Instruction::MVI_C => { self.fetch_instruction(memory); self.mov(Operand8::RegC, Operand8::Immediate, memory) },
-            Instruction::MVI_D => { self.fetch_instruction(memory); self.mov(Operand8::RegD, Operand8::Immediate, memory) },
-            Instruction::MVI_E => { self.fetch_instruction(memory); self.mov(Operand8::RegE, Operand8::Immediate, memory) },
-            Instruction::MVI_H => { self.fetch_instruction(memory); self.mov(Operand8::RegH, Operand8::Immediate, memory) },
-            Instruction::MVI_L => { self.fetch_instruction(memory); self.mov(Operand8::RegL, Operand8::Immediate, memory) },
-            Instruction::MVI_M => { self.fetch_instruction(memory); self.mov(Operand8::Memory, Operand8::Immediate, memory) },
-            Instruction::MVI_A => { self.fetch_instruction(memory); self.mov(Operand8::RegA, Operand8::Immediate, memory) },
+            Instruction::MVI_B => { self.mov(Operand8::RegB, Operand8::Immediate, memory) },
+            Instruction::MVI_C => { self.mov(Operand8::RegC, Operand8::Immediate, memory) },
+            Instruction::MVI_D => { self.mov(Operand8::RegD, Operand8::Immediate, memory) },
+            Instruction::MVI_E => { self.mov(Operand8::RegE, Operand8::Immediate, memory) },
+            Instruction::MVI_H => { self.mov(Operand8::RegH, Operand8::Immediate, memory) },
+            Instruction::MVI_L => { self.mov(Operand8::RegL, Operand8::Immediate, memory) },
+            Instruction::MVI_M => { self.mov(Operand8::Memory, Operand8::Immediate, memory) },
+            Instruction::MVI_A => { self.mov(Operand8::RegA, Operand8::Immediate, memory) },
             Instruction::ADI => { },
             Instruction::ACI => { },
             Instruction::SUI => { },
@@ -1068,7 +1068,8 @@ impl Intel8080 {
             Operand8::RegL => { self.registers.l() },
             Operand8::Memory => { memory[self.registers.pair_h() as usize] }
             Operand8::RegA => { self.registers.accumulator() },
-            Operand8::Immediate => { 
+            Operand8::Immediate => {
+                self.registers.set_pc(self.registers.pc() + 1);
                 memory[(self.registers.pc() - 1) as usize]
             }
         }
