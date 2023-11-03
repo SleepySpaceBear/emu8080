@@ -974,25 +974,25 @@ impl Intel8080 {
             Instruction::POP_D => { self.pop(Operand16::RegPairD, memory) },
             Instruction::POP_H => { self.pop(Operand16::RegPairH, memory) },
             Instruction::POP_PSW => { self.pop(Operand16::PSW, memory) },
-            Instruction::DAD_B => { },
-            Instruction::DAD_D => { },
-            Instruction::DAD_H => { },
-            Instruction::DAD_SP => { },
-            Instruction::INX_B => { },
-            Instruction::INX_D => { },
-            Instruction::INX_H => { },
-            Instruction::INX_SP => { },
-            Instruction::DCX_B => { },
-            Instruction::DCX_D => { },
-            Instruction::DCX_H => { },
-            Instruction::DCX_SP => { },
-            Instruction::XCHG => { },
-            Instruction::XTHL => { },
-            Instruction::SPHL => { },
-            Instruction::LXI_B => { },
-            Instruction::LXI_D => { },
-            Instruction::LXI_H => { },
-            Instruction::LXI_SP => { },
+            Instruction::DAD_B => { self.dad(Operand16::RegPairB) },
+            Instruction::DAD_D => { self.dad(Operand16::RegPairD) },
+            Instruction::DAD_H => { self.dad(Operand16::RegPairH) },
+            Instruction::DAD_SP => { self.dad(Operand16::PSW) },
+            Instruction::INX_B => { self.inx(Operand16::RegPairB) },
+            Instruction::INX_D => { self.inx(Operand16::RegPairD) },
+            Instruction::INX_H => { self.inx(Operand16::RegPairH) },
+            Instruction::INX_SP => { self.inx(Operand16::PSW) },
+            Instruction::DCX_B => { self.dcx(Operand16::RegPairB) },
+            Instruction::DCX_D => { self.dcx(Operand16::RegPairD) },
+            Instruction::DCX_H => { self.dcx(Operand16::RegPairH) },
+            Instruction::DCX_SP => { self.dcx(Operand16::PSW) },
+            Instruction::XCHG => { self.xchg() },
+            Instruction::XTHL => { self.xthl(memory) },
+            Instruction::SPHL => { self.sphl() },
+            Instruction::LXI_B => { self.lxi(Operand16::RegPairB, memory) },
+            Instruction::LXI_D => { self.lxi(Operand16::RegPairD, memory) },
+            Instruction::LXI_H => { self.lxi(Operand16::RegPairH, memory) },
+            Instruction::LXI_SP => { self.lxi(Operand16::PSW, memory) },
             Instruction::MVI_B => { self.fetch_instruction(memory); self.mov(Operand8::RegB, Operand8::Immediate, memory) },
             Instruction::MVI_C => { self.fetch_instruction(memory); self.mov(Operand8::RegC, Operand8::Immediate, memory) },
             Instruction::MVI_D => { self.fetch_instruction(memory); self.mov(Operand8::RegD, Operand8::Immediate, memory) },
@@ -1041,19 +1041,19 @@ impl Intel8080 {
             Instruction::RP => { },
             Instruction::RPE => { },
             Instruction::RPO => { },
-            Instruction::RST_1 => { },
-            Instruction::RST_2 => { },
-            Instruction::RST_3 => { },
-            Instruction::RST_4 => { },
-            Instruction::RST_5 => { },
-            Instruction::RST_6 => { },
-            Instruction::RST_7 => { },
-            Instruction::RST_8 => { },
-            Instruction::EI => { },
-            Instruction::DI => { },
-            Instruction::IN => { },
-            Instruction::OUT => { },
-            Instruction::HLT => { },
+            Instruction::RST_1 => { self.rst_1() },
+            Instruction::RST_2 => { self.rst_2() },
+            Instruction::RST_3 => { self.rst_3() },
+            Instruction::RST_4 => { self.rst_4() },
+            Instruction::RST_5 => { self.rst_5() },
+            Instruction::RST_6 => { self.rst_6() },
+            Instruction::RST_7 => { self.rst_7() },
+            Instruction::RST_8 => { self.rst_8() },
+            Instruction::EI => { self.ei() },
+            Instruction::DI => { self.di() },
+            Instruction::IN => { self.input() },
+            Instruction::OUT => { self.out() },
+            Instruction::HLT => { self.hlt() },
             _ => { }
         }
     }
@@ -1084,7 +1084,7 @@ impl Intel8080 {
             Operand8::RegL => { self.registers.set_l(val) },
             Operand8::Memory => { memory[self.registers.pair_h() as usize] = val; },
             Operand8::RegA => { self.registers.set_accumulator(val) },
-            Operand8::Immediate => {} 
+            Operand8::Immediate => {/* INVALID */} 
         }
     }
 
@@ -1094,9 +1094,10 @@ impl Intel8080 {
             Operand16::RegPairB => { self.registers.pair_b() },
             Operand16::RegPairD => { self.registers.pair_d() },
             Operand16::RegPairH => { self.registers.pair_h() },
-            Operand16::Immediate => { 
-                make_u16(memory[(self.registers.pc() - 1) as usize], 
-                         memory[(self.registers.pc() - 2) as usize])
+            Operand16::Immediate => {
+                self.registers.set_pc(self.registers.pc() + 2);
+                make_u16(memory[(self.registers.pc() - 2) as usize], 
+                         memory[(self.registers.pc() - 1) as usize])
             }
         }
     }
@@ -1107,9 +1108,8 @@ impl Intel8080 {
             Operand16::RegPairB => { self.registers.set_pair_b(val) },
             Operand16::RegPairD => { self.registers.set_pair_d(val) },
             Operand16::RegPairH => { self.registers.set_pair_h(val) }
-            Operand16::Immediate => {}
+            Operand16::Immediate => {/* INVALID */}
         }
-
     }
 
     fn set_condition(&mut self, val: u8, carry: bool, aux_carry: bool) {
@@ -1187,7 +1187,7 @@ impl Intel8080 {
             Operand16::RegPairD => {
                 memory[self.registers.pair_d() as usize] = self.registers.accumulator();
             },
-            _ => {}
+            _ => {/* INVALID */}
         }
     }
 
@@ -1200,7 +1200,7 @@ impl Intel8080 {
             Operand16::RegPairD => {
                 self.registers.set_accumulator(memory[self.registers.pair_d() as usize]);
             },
-            _ => {}
+            _ => {/* INVALID */}
         }
     }
 
@@ -1358,7 +1358,7 @@ impl Intel8080 {
             Operand16::RegPairD => { self.registers.d() },
             Operand16::RegPairH => { self.registers.h() },
             Operand16::PSW => { self.registers.status() },
-            Operand16::Immediate => { 0 }
+            Operand16::Immediate => { 0 /* INVALID */ }
         };
         
         let second_register = match src {
@@ -1366,7 +1366,7 @@ impl Intel8080 {
             Operand16::RegPairD => { self.registers.e() },
             Operand16::RegPairH => { self.registers.l() },
             Operand16::PSW => { self.registers.accumulator() },
-            Operand16::Immediate => { 0 }
+            Operand16::Immediate => { 0 /* INVALID */ }
         };
 
         memory[(self.registers.sp() - 1) as usize] = first_register;
@@ -1396,7 +1396,7 @@ impl Intel8080 {
                 self.registers.set_status(first_register);
                 self.registers.set_accumulator(second_register);
             },
-            _ => { }
+            _ => { /* INVALID */ }
         }
 
         self.registers.set_sp(self.registers.sp() + 2);
@@ -1404,17 +1404,64 @@ impl Intel8080 {
 
     // Double Add
     fn dad(&mut self, src: Operand16) {
+        let val = match src {
+            Operand16::RegPairB => {
+                self.registers.pair_b()
+            },
+            Operand16::RegPairD => {
+                self.registers.pair_d()
+            },
+            Operand16::RegPairH => {
+                self.registers.pair_h()
+            },
+            Operand16::PSW => {
+                self.registers.psw()
+            },
+            _ => { 0 /* INVALID */ }
+        };
 
+        let carry = (val & 0x80) | (self.registers.pair_h() & 0x80) != 0;
+        self.registers.set_status_carry(carry);
+        
+        self.registers.set_pair_h(val + self.registers.pair_h());
     }
 
     // Increment Register Pair
     fn inx(&mut self, src: Operand16) {
-
+        match src {
+            Operand16::RegPairB => {
+                self.registers.set_pair_b(self.registers.pair_b() + 1);
+            },
+            Operand16::RegPairD => {
+                self.registers.set_pair_d(self.registers.pair_d() + 1);
+            },
+            Operand16::RegPairH => {
+                self.registers.set_pair_d(self.registers.pair_h() + 1);
+            },
+            Operand16::PSW => {
+                self.registers.set_psw(self.registers.psw() + 1);
+            },
+            _ => { /* INVALID */ }
+        };
     }
 
     // Decrement Register Pair
     fn dcx(&mut self, src: Operand16) {
-
+        match src {
+            Operand16::RegPairB => {
+                self.registers.set_pair_b(self.registers.pair_b() - 1);
+            },
+            Operand16::RegPairD => {
+                self.registers.set_pair_d(self.registers.pair_d() - 1);
+            },
+            Operand16::RegPairH => {
+                self.registers.set_pair_d(self.registers.pair_h() - 1);
+            },
+            Operand16::PSW => {
+                self.registers.set_psw(self.registers.psw() - 1);
+            },
+            _ => { /* INVALID */ }
+        };
     }
 
     // Exchange Registers
@@ -1434,6 +1481,34 @@ impl Intel8080 {
     // Load SP From H and L
     fn sphl(&mut self) {
         self.registers.set_sp(self.registers.pair_h());
+    }
+
+    // Load Register Pair Immediate
+    fn lxi(&mut self, dst: Operand16, memory: &Vec<u8>) {
+        let first_register = memory[self.registers.pc() as usize];
+        let second_register = memory[self.registers.pc() as usize];
+        self.registers.set_pc(self.registers.pc() + 2);
+
+        match dst {
+            Operand16::RegPairB => {
+                self.registers.set_b(first_register);
+                self.registers.set_c(second_register);
+            },
+            Operand16::RegPairD => {
+                self.registers.set_d(first_register);
+                self.registers.set_e(second_register);
+            },
+            Operand16::RegPairH => {
+                self.registers.set_h(first_register);
+                self.registers.set_l(second_register);
+            },
+            Operand16::PSW => {
+                self.registers.set_status(first_register);
+                self.registers.set_accumulator(second_register);
+            },
+            _ => { /* INVALID */ }
+
+        }
     }
 
     // Store Accumulator Direct
