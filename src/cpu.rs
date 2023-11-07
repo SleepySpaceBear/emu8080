@@ -1001,16 +1001,16 @@ impl Intel8080 {
             Instruction::MVI_L => { self.load_imm(memory); self.mov(Operand8::RegL, Operand8::Immediate, memory) },
             Instruction::MVI_M => { self.load_imm(memory); self.mov(Operand8::Memory, Operand8::Immediate, memory) },
             Instruction::MVI_A => { self.load_imm(memory); self.mov(Operand8::RegA, Operand8::Immediate, memory) },
-            Instruction::ADI => { },
-            Instruction::ACI => { },
-            Instruction::SUI => { },
-            Instruction::SBI => { },
-            Instruction::ANI => { },
-            Instruction::XRI => { },
-            Instruction::ORI => { },
-            Instruction::CPI => { },
-            Instruction::STA => { },
-            Instruction::LDA => { },
+            Instruction::ADI => { self.load_imm(memory); self.add(Operand8::Immediate, memory); },
+            Instruction::ACI => { self.load_imm(memory); self.adc(Operand8::Immediate, memory); },
+            Instruction::SUI => { self.load_imm(memory); self.sub(Operand8::Immediate, memory); },
+            Instruction::SBI => { self.load_imm(memory); self.sbb(Operand8::Immediate, memory); },
+            Instruction::ANI => { self.load_imm(memory); self.ana(Operand8::Immediate, memory); },
+            Instruction::XRI => { self.load_imm(memory); self.xra(Operand8::Immediate, memory); },
+            Instruction::ORI => { self.load_imm(memory); self.ora(Operand8::Immediate, memory); },
+            Instruction::CPI => { self.load_imm(memory); self.cmp(Operand8::Immediate, memory); },
+            Instruction::STA => { self.load_imm16(memory); self.sta(memory); },
+            Instruction::LDA => { self.load_imm16(memory); self.lda(memory) },
             Instruction::SHLD => { },
             Instruction::LHLD => { },
             Instruction::PCHL => { },
@@ -1064,8 +1064,8 @@ impl Intel8080 {
     }
 
     fn load_imm16(&mut self, memory: &Vec<u8>) {
-        self.registers.set_w(memory[self.registers.pc() as usize]);
-        self.registers.set_z(memory[self.registers.pc() as usize + 1]);
+        self.registers.set_z(memory[self.registers.pc() as usize]);
+        self.registers.set_w(memory[self.registers.pc() as usize + 1]);
         self.registers.set_pc(self.registers.pc() + 2);
     }
 
@@ -1455,28 +1455,30 @@ impl Intel8080 {
     }
 
     // Store Accumulator Direct
-    fn sta(&mut self) {
-
+    fn sta(&mut self, memory: &mut Vec<u8>) {
+        memory[self.registers.pair_w() as usize] = self.registers.accumulator();
     }
 
     // Load Accumulator Direct
-    fn lda(&mut self) {
-
+    fn lda(&mut self, memory: &Vec<u8>) {
+        self.registers.set_accumulator(memory[self.registers.pair_w() as usize]);
     }
 
     // Store H and L Direct
-    fn shld(&mut self) {
-
+    fn shld(&mut self, memory: &mut Vec<u8>) {
+        memory[self.registers.pair_w() as usize] = self.registers.l();
+        memory[self.registers.pair_w() as usize + 1] = self.registers.h();
     }
 
     // Load H and L Direct
-    fn lhld(&mut self) {
-
+    fn lhld(&mut self, memory: &Vec<u8>) {
+        self.registers.set_l(memory[self.registers.pair_w() as usize]);
+        self.registers.set_h(memory[self.registers.pair_w() as usize + 1]);
     }
 
     // Load Program Counter
     fn pchl(&mut self) {
-
+        self.registers.set_pc(self.registers.pair_h());
     }
 
     // Jump
