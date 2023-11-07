@@ -160,7 +160,7 @@ impl Registers {
         self.status
     }
 
-    pub fn set_status(&self, val: u8) {
+    pub fn set_status(&mut self, val: u8) {
         self.status = 0x2 | (val & 0xC5);
     }
 

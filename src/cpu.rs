@@ -1013,7 +1013,7 @@ impl Intel8080 {
             Instruction::LDA => { self.load_imm16(memory); self.lda(memory) },
             Instruction::SHLD => { self.load_imm16(memory); self.shld(memory); },
             Instruction::LHLD => { self.load_imm16(memory); self.lhld(memory); },
-            Instruction::PCHL => { self.load_imm16(memory); self.pchl(); },
+            Instruction::PCHL => { self.pchl(); },
             Instruction::JMP => { },
             Instruction::JC => { },
             Instruction::JNC => { },
