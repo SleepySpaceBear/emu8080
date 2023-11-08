@@ -1,3 +1,5 @@
+use std::usize;
+
 use crate::registers::Registers as Registers;
 use crate::utils::*;
 
@@ -1014,41 +1016,41 @@ impl Intel8080 {
             Instruction::SHLD => { self.load_imm16(memory); self.shld(memory); },
             Instruction::LHLD => { self.load_imm16(memory); self.lhld(memory); },
             Instruction::PCHL => { self.pchl(); },
-            Instruction::JMP => { },
-            Instruction::JC => { },
-            Instruction::JNC => { },
-            Instruction::JZ => { },
-            Instruction::JNZ => { },
-            Instruction::JM => { },
-            Instruction::JP => { },
-            Instruction::JPE => { },
-            Instruction::JPO => { },
-            Instruction::CALL => { },
-            Instruction::CC => { },
-            Instruction::CNC => { },
-            Instruction::CZ => { },
-            Instruction::CNZ => { },
-            Instruction::CM => { },
-            Instruction::CP => { },
-            Instruction::CPE => { },
-            Instruction::CPO => { },
-            Instruction::RET => { },
-            Instruction::RC => { },
-            Instruction::RNC => { },
-            Instruction::RZ => { },
-            Instruction::RNZ => { },
-            Instruction::RM => { },
-            Instruction::RP => { },
-            Instruction::RPE => { },
-            Instruction::RPO => { },
-            Instruction::RST_1 => { self.rst_1() },
-            Instruction::RST_2 => { self.rst_2() },
-            Instruction::RST_3 => { self.rst_3() },
-            Instruction::RST_4 => { self.rst_4() },
-            Instruction::RST_5 => { self.rst_5() },
-            Instruction::RST_6 => { self.rst_6() },
-            Instruction::RST_7 => { self.rst_7() },
-            Instruction::RST_8 => { self.rst_8() },
+            Instruction::JMP => { self.load_imm16(memory); self.jmp(); },
+            Instruction::JC => { self.load_imm16(memory); self.jc(); },
+            Instruction::JNC => { self.load_imm16(memory); self.jnc(); },
+            Instruction::JZ => { self.load_imm16(memory); self.jz(); },
+            Instruction::JNZ => { self.load_imm16(memory); self.jnz(); },
+            Instruction::JM => { self.load_imm16(memory); self.jm(); },
+            Instruction::JP => { self.load_imm16(memory); self.jp(); },
+            Instruction::JPE => { self.load_imm16(memory); self.jpe(); },
+            Instruction::JPO => { self.load_imm16(memory); self.jpo(); },
+            Instruction::CALL => { self.load_imm16(memory); self.call(memory); },
+            Instruction::CC => { self.load_imm16(memory); self.cc(memory); },
+            Instruction::CNC => { self.load_imm16(memory); self.cnc(memory); },
+            Instruction::CZ => { self.load_imm16(memory); self.cz(memory); },
+            Instruction::CNZ => { self.load_imm16(memory); self.cnz(memory); },
+            Instruction::CM => { self.load_imm16(memory); self.cm(memory); },
+            Instruction::CP => { self.load_imm16(memory); self.cp(memory); },
+            Instruction::CPE => { self.load_imm16(memory); self.cpe(memory); },
+            Instruction::CPO => { self.load_imm16(memory); self.cpo(memory); },
+            Instruction::RET => { self.ret(memory); },
+            Instruction::RC => { self.rc(memory); },
+            Instruction::RNC => { self.rnc(memory); },
+            Instruction::RZ => { self.rz(memory); },
+            Instruction::RNZ => { self.rnz(memory); },
+            Instruction::RM => { self.rm(memory); },
+            Instruction::RP => { self.rp(memory); },
+            Instruction::RPE => { self.rpe(memory); },
+            Instruction::RPO => { self.rpo(memory); },
+            Instruction::RST_1 => { self.rst_1(memory) },
+            Instruction::RST_2 => { self.rst_2(memory) },
+            Instruction::RST_3 => { self.rst_3(memory) },
+            Instruction::RST_4 => { self.rst_4(memory) },
+            Instruction::RST_5 => { self.rst_5(memory) },
+            Instruction::RST_6 => { self.rst_6(memory) },
+            Instruction::RST_7 => { self.rst_7(memory) },
+            Instruction::RST_8 => { self.rst_8(memory) },
             Instruction::EI => { self.ei() },
             Instruction::DI => { self.di() },
             Instruction::IN => { self.input() },
@@ -1483,177 +1485,218 @@ impl Intel8080 {
 
     // Jump
     fn jmp(&mut self) {
-
+        self.registers.set_pc(self.registers.pair_w());
     }
 
     // Jump If Carry
     fn jc(&mut self) {
-
+        if self.registers.status_carry() {
+           self.jmp(); 
+        }
     }
 
     // Jump No Carry
     fn jnc(&mut self) {
-
+        if !self.registers.status_carry() {
+            self.jmp();
+        }
     }
 
     // Jump If Zero
     fn jz(&mut self) {
-
+        if self.registers.status_zero() {
+            self.jmp();
+        }
     }
 
     // Jump If Not Zero
     fn jnz(&mut self) {
-
+        if !self.registers.status_zero() {
+            self.jmp();
+        }
     }
 
     // Jump If Minus
     fn jm(&mut self) {
-
+        if self.registers.status_sign() {
+            self.jmp();
+        }
     }
 
     // Jump If Positive
     fn jp(&mut self) {
-
+        if !self.registers.status_sign() {
+            self.jmp();
+        }
     }
 
     // Jump If Parity Even
     fn jpe(&mut self) {
-
+        if self.registers.status_parity() {
+            self.jmp();
+        }
     }
 
     // Jump If Parity Odd
     fn jpo(&mut self) {
-
+        if !self.registers.status_parity() {
+            self.jmp();
+        }
     }
 
     // Call
-    fn call(&mut self) {
-
+    fn call(&mut self, memory: &mut Vec<u8>) {
+        memory[self.registers.sp() as usize] = (self.registers.pc() >> 8) as u8;
+        memory[self.registers.sp() as usize + 1] = (self.registers.pc() & 0xFF) as u8;
+        self.registers.set_sp(self.registers.sp() + 2);
+        self.jmp();
     }
 
     // Call If Carry
-    fn cc(&mut self) {
-
+    fn cc(&mut self, memory: &mut Vec<u8>) {
+        if self.registers.status_carry() {
+            self.call(memory);
+        }
     }
 
     // Call If No Carry
-    fn cnc(&mut self) {
-
+    fn cnc(&mut self, memory: &mut Vec<u8>) {
+        if !self.registers.status_carry() {
+            self.call(memory);
+        }
     }
 
     // Call If Zero
-    fn cz(&mut self) {
-
+    fn cz(&mut self, memory: &mut Vec<u8>) {
+        if self.registers.status_zero() {
+            self.call(memory);
+        }
     }
 
     // Call If Not Zero
-    fn cnz(&mut self) {
-
+    fn cnz(&mut self, memory: &mut Vec<u8>) {
+        if !self.registers.status_zero() {
+            self.call(memory);
+        }
     }
 
     // Call If Minus
-    fn cm(&mut self) {
-
+    fn cm(&mut self, memory: &mut Vec<u8>) {
+        if self.registers.status_sign() {
+            self.call(memory);
+        }
     }
 
     // Call If Plus
-    fn cp(&mut self) {
-
+    fn cp(&mut self, memory: &mut Vec<u8>) {
+        if !self.registers.status_sign() {
+            self.call(memory);
+        }
     }
 
     // Call If Parity Even
-    fn cpe(&mut self) {
-
+    fn cpe(&mut self, memory: &mut Vec<u8>) {
+        if self.registers.status_parity() {
+            self.call(memory);
+        }
     }
 
     // Call If Parity Odd
-    fn cpo(&mut self) {
-
+    fn cpo(&mut self, memory: &mut Vec<u8>) {
+        if !self.registers.status_parity() {
+            self.call(memory);
+        }
     }
 
     // Return
-    fn ret(&mut self) {
+    fn ret(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If Carry
-    fn rc(&mut self) {
+    fn rc(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If No Carry
-    fn rnc(&mut self) {
+    fn rnc(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If Zero
-    fn rz(&mut self) {
+    fn rz(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If Not Zero
-    fn rnz(&mut self) {
+    fn rnz(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If Minus
-    fn rm(&mut self) {
+    fn rm(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If Plus
-    fn rp(&mut self) {
+    fn rp(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If Parity Even
-    fn rpe(&mut self) {
+    fn rpe(&mut self, memory: &Vec<u8>) {
 
     }
 
     // Return If Parity Odd
-    fn rpo(&mut self) {
+    fn rpo(&mut self, memory: &Vec<u8>) {
 
     }
 
-    // Restart
-    fn rst_1(&mut self) {
-
+    fn rst(&mut self, addr: u16, memory: &mut Vec<u8>) {
+        self.registers.set_w(((addr >> 8) & 0xF) as u8);
+        self.registers.set_z((addr & 0xF) as u8);
+        self.call(memory);
     }
 
     // Restart
-    fn rst_2(&mut self) {
-
+    fn rst_1(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0, memory);
     }
 
     // Restart
-    fn rst_3(&mut self) {
-
+    fn rst_2(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0b001000, memory);
     }
 
     // Restart
-    fn rst_4(&mut self) {
-
+    fn rst_3(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0b010000, memory);
     }
 
     // Restart
-    fn rst_5(&mut self) {
-
+    fn rst_4(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0b011000, memory);
     }
 
     // Restart
-    fn rst_6(&mut self) {
-
+    fn rst_5(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0b100000, memory);
     }
 
     // Restart
-    fn rst_7(&mut self) {
-
+    fn rst_6(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0b101000, memory);
     }
 
     // Restart
-    fn rst_8(&mut self) {
+    fn rst_7(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0b110000, memory);
+    }
 
+    // Restart
+    fn rst_8(&mut self, memory: &mut Vec<u8>) {
+        self.rst(0b111000, memory);
     }
 
     // Enable Interrupts
