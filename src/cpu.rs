@@ -802,7 +802,9 @@ impl From<u8> for Operand16 {
 }
 
 struct Intel8080 {
-    registers: Registers
+    registers: Registers,
+    interrupts: bool,
+    halted: bool
 }
 
 impl Intel8080 {
@@ -1679,27 +1681,27 @@ impl Intel8080 {
     }
     // Enable Interrupts
     fn ei(&mut self) {
-
+        self.interrupts = true;
     }
 
     // Disable Interrupts
     fn di(&mut self) {
-
+        self.interrupts = false;
     }
 
     // Input
-    fn input(&mut self) {
+    fn input(&self) {
 
     }
 
     // Output
-    fn out(&mut self) {
+    fn out(&self) {
 
     }
 
     // Halt
     fn hlt(&mut self) {
-
+        self.halted = true;
     }
 
 }
