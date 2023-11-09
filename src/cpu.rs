@@ -1043,14 +1043,14 @@ impl Intel8080 {
             Instruction::RP => { self.rp(memory); },
             Instruction::RPE => { self.rpe(memory); },
             Instruction::RPO => { self.rpo(memory); },
-            Instruction::RST_1 => { self.rst_1(memory) },
-            Instruction::RST_2 => { self.rst_2(memory) },
-            Instruction::RST_3 => { self.rst_3(memory) },
-            Instruction::RST_4 => { self.rst_4(memory) },
-            Instruction::RST_5 => { self.rst_5(memory) },
-            Instruction::RST_6 => { self.rst_6(memory) },
-            Instruction::RST_7 => { self.rst_7(memory) },
-            Instruction::RST_8 => { self.rst_8(memory) },
+            Instruction::RST_1 => { self.rst(0, memory) },
+            Instruction::RST_2 => { self.rst(1, memory) },
+            Instruction::RST_3 => { self.rst(2, memory) },
+            Instruction::RST_4 => { self.rst(3, memory) },
+            Instruction::RST_5 => { self.rst(4, memory) },
+            Instruction::RST_6 => { self.rst(5, memory) },
+            Instruction::RST_7 => { self.rst(6, memory) },
+            Instruction::RST_8 => { self.rst(7, memory) },
             Instruction::EI => { self.ei() },
             Instruction::DI => { self.di() },
             Instruction::IN => { self.input() },
@@ -1610,95 +1610,73 @@ impl Intel8080 {
 
     // Return
     fn ret(&mut self, memory: &Vec<u8>) {
-
+        let new_pc:u16 = make_u16(memory[self.registers.sp() as usize - 1],
+                                  memory[self.registers.sp() as usize - 2]);
+        self.registers.set_pc(new_pc);
+        self.registers.set_sp(self.registers.sp() - 2);
     }
 
     // Return If Carry
     fn rc(&mut self, memory: &Vec<u8>) {
-
+        if self.registers.status_carry() {
+            self.ret(memory);
+        }
     }
 
     // Return If No Carry
     fn rnc(&mut self, memory: &Vec<u8>) {
-
+        if !self.registers.status_carry() {
+            self.ret(memory);
+        }
     }
 
     // Return If Zero
     fn rz(&mut self, memory: &Vec<u8>) {
-
+        if self.registers.status_zero() {
+            self.ret(memory);
+        }
     }
 
     // Return If Not Zero
     fn rnz(&mut self, memory: &Vec<u8>) {
-
+        if !self.registers.status_zero() {
+            self.ret(memory);
+        }
     }
 
     // Return If Minus
     fn rm(&mut self, memory: &Vec<u8>) {
-
+        if self.registers.status_sign() {
+            self.ret(memory);
+        }
     }
 
     // Return If Plus
     fn rp(&mut self, memory: &Vec<u8>) {
-
+        if !self.registers.status_sign() {
+            self.ret(memory);
+        }
     }
 
     // Return If Parity Even
     fn rpe(&mut self, memory: &Vec<u8>) {
-
+        if self.registers.status_parity() {
+            self.ret(memory);
+        }
     }
 
     // Return If Parity Odd
     fn rpo(&mut self, memory: &Vec<u8>) {
-
+        if !self.registers.status_parity() {
+            self.ret(memory);
+        }
     }
 
-    fn rst(&mut self, addr: u16, memory: &mut Vec<u8>) {
-        self.registers.set_w(((addr >> 8) & 0xF) as u8);
-        self.registers.set_z((addr & 0xF) as u8);
+    fn rst(&mut self, exp: u8, memory: &mut Vec<u8>) {
+        self.registers.set_w(0);
+        self.registers.set_z(exp << 3);
         self.call(memory);
     }
-
-    // Restart
-    fn rst_1(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0, memory);
-    }
-
-    // Restart
-    fn rst_2(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0b001000, memory);
-    }
-
-    // Restart
-    fn rst_3(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0b010000, memory);
-    }
-
-    // Restart
-    fn rst_4(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0b011000, memory);
-    }
-
-    // Restart
-    fn rst_5(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0b100000, memory);
-    }
-
-    // Restart
-    fn rst_6(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0b101000, memory);
-    }
-
-    // Restart
-    fn rst_7(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0b110000, memory);
-    }
-
-    // Restart
-    fn rst_8(&mut self, memory: &mut Vec<u8>) {
-        self.rst(0b111000, memory);
-    }
-
     // Enable Interrupts
     fn ei(&mut self) {
 
