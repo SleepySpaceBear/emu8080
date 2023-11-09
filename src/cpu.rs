@@ -801,183 +801,184 @@ impl From<u8> for Operand16 {
     }
 }
 
-struct Intel8080 {
+struct Intel8080<'a> {
     registers: Registers,
+    memory: &'a mut [u8],
     inte: bool,
     stopped: bool
 }
 
-impl Intel8080 {
-    fn init(&mut self) {
-    
+impl<'a> Intel8080<'a> {
+    fn init(&mut self, memory: &'a mut [u8]) {
+        self.memory = memory;
     }
 
-    fn fetch_instruction(&mut self, memory: &Vec<u8>) -> Instruction {
-        let instruction: Instruction = Instruction::from(memory[self.registers.pc() as usize]);   
+    fn fetch_instruction(&mut self) -> Instruction {
+        let instruction: Instruction = Instruction::from(self.memory[self.registers.pc() as usize]);   
         self.registers.set_pc(self.registers.pc() + 1);
         return instruction
     }
 
-    fn do_instruction(&mut self, memory: &mut Vec<u8>) {
-        let instruction = self.fetch_instruction(memory);
+    fn do_instruction(&mut self) {
+        let instruction = self.fetch_instruction();
 
         match instruction {
             Instruction::STC => { self.stc() },
             Instruction::CMC => { self.cmc() },
-            Instruction::INR_B => { self.inr(Operand8::RegB, memory) },
-            Instruction::INR_C => { self.inr(Operand8::RegC, memory) },
-            Instruction::INR_D => { self.inr(Operand8::RegD, memory) },
-            Instruction::INR_E => { self.inr(Operand8::RegE, memory) },
-            Instruction::INR_H => { self.inr(Operand8::RegH, memory) },
-            Instruction::INR_L => { self.inr(Operand8::RegL, memory) },
-            Instruction::INR_M => { self.inr(Operand8::Memory, memory) },
-            Instruction::INR_A => { self.inr(Operand8::RegA, memory) },
-            Instruction::DCR_B => { self.dcr(Operand8::RegB, memory) },
-            Instruction::DCR_C => { self.dcr(Operand8::RegC, memory)  },
-            Instruction::DCR_D => { self.dcr(Operand8::RegD, memory) },
-            Instruction::DCR_E => { self.dcr(Operand8::RegE, memory) },
-            Instruction::DCR_H => { self.dcr(Operand8::RegH, memory) },
-            Instruction::DCR_L => { self.dcr(Operand8::RegL, memory) },
-            Instruction::DCR_M => { self.dcr(Operand8::Memory, memory) },
-            Instruction::DCR_A => { self.dcr(Operand8::RegA, memory) },
+            Instruction::INR_B => { self.inr(Operand8::RegB) },
+            Instruction::INR_C => { self.inr(Operand8::RegC) },
+            Instruction::INR_D => { self.inr(Operand8::RegD) },
+            Instruction::INR_E => { self.inr(Operand8::RegE) },
+            Instruction::INR_H => { self.inr(Operand8::RegH) },
+            Instruction::INR_L => { self.inr(Operand8::RegL) },
+            Instruction::INR_M => { self.inr(Operand8::Memory) },
+            Instruction::INR_A => { self.inr(Operand8::RegA) },
+            Instruction::DCR_B => { self.dcr(Operand8::RegB) },
+            Instruction::DCR_C => { self.dcr(Operand8::RegC)  },
+            Instruction::DCR_D => { self.dcr(Operand8::RegD) },
+            Instruction::DCR_E => { self.dcr(Operand8::RegE) },
+            Instruction::DCR_H => { self.dcr(Operand8::RegH) },
+            Instruction::DCR_L => { self.dcr(Operand8::RegL) },
+            Instruction::DCR_M => { self.dcr(Operand8::Memory) },
+            Instruction::DCR_A => { self.dcr(Operand8::RegA) },
             Instruction::CMA => { self.cma() },
             Instruction::DAA => { self.daa() },
-            Instruction::MOV_B_C => { self.mov(Operand8::RegB, Operand8::RegC,  memory) },
-            Instruction::MOV_B_D => { self.mov(Operand8::RegB, Operand8::RegD,  memory) },
-            Instruction::MOV_B_E => { self.mov(Operand8::RegB, Operand8::RegE,  memory) },
-            Instruction::MOV_B_H => { self.mov(Operand8::RegB, Operand8::RegH,  memory) },
-            Instruction::MOV_B_L => { self.mov(Operand8::RegB, Operand8::RegL,  memory) },
-            Instruction::MOV_B_M => { self.mov(Operand8::RegB, Operand8::Memory, memory) },
-            Instruction::MOV_B_A => { self.mov(Operand8::RegB, Operand8::RegA,  memory) },
-            Instruction::MOV_C_B => { self.mov(Operand8::RegC, Operand8::RegB,  memory) },
-            Instruction::MOV_C_D => { self.mov(Operand8::RegC, Operand8::RegD,  memory) },
-            Instruction::MOV_C_E => { self.mov(Operand8::RegC, Operand8::RegE,  memory) },
-            Instruction::MOV_C_H => { self.mov(Operand8::RegC, Operand8::RegH,  memory) },
-            Instruction::MOV_C_L => { self.mov(Operand8::RegC, Operand8::RegL,  memory) },
-            Instruction::MOV_C_M => { self.mov(Operand8::RegC, Operand8::Memory, memory) },
-            Instruction::MOV_C_A => { self.mov(Operand8::RegC, Operand8::RegA,  memory) },
-            Instruction::MOV_D_B => { self.mov(Operand8::RegD, Operand8::RegB,  memory) },
-            Instruction::MOV_D_C => { self.mov(Operand8::RegD, Operand8::RegC,  memory) },
-            Instruction::MOV_D_E => { self.mov(Operand8::RegD, Operand8::RegE,  memory) },
-            Instruction::MOV_D_H => { self.mov(Operand8::RegD, Operand8::RegH,  memory) },
-            Instruction::MOV_D_L => { self.mov(Operand8::RegD, Operand8::RegL,  memory) },
-            Instruction::MOV_D_M => { self.mov(Operand8::RegD, Operand8::Memory, memory) },
-            Instruction::MOV_D_A => { self.mov(Operand8::RegD, Operand8::RegA,  memory) },
-            Instruction::MOV_E_B => { self.mov(Operand8::RegE, Operand8::RegB,  memory) },
-            Instruction::MOV_E_C => { self.mov(Operand8::RegE, Operand8::RegC,  memory) },
-            Instruction::MOV_E_D => { self.mov(Operand8::RegE, Operand8::RegD,  memory) },
-            Instruction::MOV_E_H => { self.mov(Operand8::RegE, Operand8::RegH,  memory) },
-            Instruction::MOV_E_L => { self.mov(Operand8::RegE, Operand8::RegL,  memory) },
-            Instruction::MOV_E_M => { self.mov(Operand8::RegE, Operand8::Memory, memory) },
-            Instruction::MOV_E_A => { self.mov(Operand8::RegE, Operand8::RegA,  memory) },
-            Instruction::MOV_H_B => { self.mov(Operand8::RegH, Operand8::RegB,  memory) },
-            Instruction::MOV_H_C => { self.mov(Operand8::RegH, Operand8::RegC,  memory) },
-            Instruction::MOV_H_D => { self.mov(Operand8::RegH, Operand8::RegD,  memory) },
-            Instruction::MOV_H_E => { self.mov(Operand8::RegE, Operand8::RegE,  memory) },
-            Instruction::MOV_H_L => { self.mov(Operand8::RegH, Operand8::RegL,  memory) },
-            Instruction::MOV_H_M => { self.mov(Operand8::RegH, Operand8::Memory, memory) },
-            Instruction::MOV_H_A => { self.mov(Operand8::RegH, Operand8::RegA,  memory) },
-            Instruction::MOV_L_B => { self.mov(Operand8::RegL, Operand8::RegB,  memory) },
-            Instruction::MOV_L_C => { self.mov(Operand8::RegL, Operand8::RegC,  memory) },
-            Instruction::MOV_L_D => { self.mov(Operand8::RegL, Operand8::RegD,  memory) },
-            Instruction::MOV_L_E => { self.mov(Operand8::RegL, Operand8::RegE,  memory) },
-            Instruction::MOV_L_H => { self.mov(Operand8::RegL, Operand8::RegH,  memory) },
-            Instruction::MOV_L_M => { self.mov(Operand8::RegL, Operand8::Memory, memory) },
-            Instruction::MOV_L_A => { self.mov(Operand8::RegL, Operand8::RegA,  memory) },
-            Instruction::MOV_M_B => { self.mov(Operand8::Memory, Operand8::RegB, memory) },
-            Instruction::MOV_M_C => { self.mov(Operand8::Memory, Operand8::RegC, memory) },
-            Instruction::MOV_M_D => { self.mov(Operand8::Memory, Operand8::RegD, memory) },
-            Instruction::MOV_M_E => { self.mov(Operand8::Memory, Operand8::RegE, memory) },
-            Instruction::MOV_M_H => { self.mov(Operand8::Memory, Operand8::RegH, memory) },
-            Instruction::MOV_M_L => { self.mov(Operand8::Memory, Operand8::RegL, memory) },
-            Instruction::MOV_M_A => { self.mov(Operand8::Memory, Operand8::RegH, memory) },
-            Instruction::MOV_A_B => { self.mov(Operand8::RegA, Operand8::RegB,  memory) },
-            Instruction::MOV_A_C => { self.mov(Operand8::RegA, Operand8::RegC,  memory) },
-            Instruction::MOV_A_D => { self.mov(Operand8::RegA, Operand8::RegD,  memory) },
-            Instruction::MOV_A_E => { self.mov(Operand8::RegA, Operand8::RegE,  memory) },
-            Instruction::MOV_A_H => { self.mov(Operand8::RegA, Operand8::RegH,  memory) },
-            Instruction::MOV_A_L => { self.mov(Operand8::RegA, Operand8::RegL,  memory) },
-            Instruction::MOV_A_M => { self.mov(Operand8::RegA, Operand8::Memory, memory) },
-            Instruction::STAX_B => { self.stax(Operand16::RegPairB, memory) },
-            Instruction::STAX_D => { self.stax(Operand16::RegPairD, memory) },
-            Instruction::LDAX_B => { self.ldax(Operand16::RegPairB, memory) },
-            Instruction::LDAX_D => { self.ldax(Operand16::RegPairD, memory)},
-            Instruction::ADD_B => { self.add(Operand8::RegB, memory) },
-            Instruction::ADD_C => { self.add(Operand8::RegC, memory) },
-            Instruction::ADD_D => { self.add(Operand8::RegD, memory) },
-            Instruction::ADD_E => { self.add(Operand8::RegE, memory) },
-            Instruction::ADD_H => { self.add(Operand8::RegH, memory) },
-            Instruction::ADD_L => { self.add(Operand8::RegL, memory) },
-            Instruction::ADD_M => { self.add(Operand8::Memory, memory) },
-            Instruction::ADD_A => { self.add(Operand8::RegA, memory) },
-            Instruction::ADC_B => { self.adc(Operand8::RegB, memory) },
-            Instruction::ADC_C => { self.adc(Operand8::RegC, memory) },
-            Instruction::ADC_D => { self.adc(Operand8::RegD, memory) },
-            Instruction::ADC_E => { self.adc(Operand8::RegE, memory) },
-            Instruction::ADC_H => { self.adc(Operand8::RegH, memory) },
-            Instruction::ADC_L => { self.adc(Operand8::RegL, memory) },
-            Instruction::ADC_M => { self.adc(Operand8::Memory, memory) },
-            Instruction::ADC_A => { self.adc(Operand8::RegA, memory) },
-            Instruction::SUB_B => { self.sub(Operand8::RegB, memory) },
-            Instruction::SUB_C => { self.sub(Operand8::RegC, memory) },
-            Instruction::SUB_D => { self.sub(Operand8::RegD, memory) },
-            Instruction::SUB_E => { self.sub(Operand8::RegE, memory) },
-            Instruction::SUB_H => { self.sub(Operand8::RegH, memory) },
-            Instruction::SUB_L => { self.sub(Operand8::RegL, memory) },
-            Instruction::SUB_M => { self.sub(Operand8::Memory, memory) },
-            Instruction::SUB_A => { self.sub(Operand8::RegA, memory) },
-            Instruction::SBB_B => { self.sbb(Operand8::RegB, memory) },
-            Instruction::SBB_C => { self.sbb(Operand8::RegC, memory) },
-            Instruction::SBB_D => { self.sbb(Operand8::RegD, memory) },
-            Instruction::SBB_E => { self.sbb(Operand8::RegE, memory) },
-            Instruction::SBB_H => { self.sbb(Operand8::RegH, memory) },
-            Instruction::SBB_L => { self.sbb(Operand8::RegL, memory) },
-            Instruction::SBB_M => { self.sbb(Operand8::Memory, memory) },
-            Instruction::SBB_A => { self.sbb(Operand8::RegA, memory)  },
-            Instruction::ANA_B => { self.ana(Operand8::RegB, memory) },
-            Instruction::ANA_C => { self.ana(Operand8::RegC, memory) },
-            Instruction::ANA_D => { self.ana(Operand8::RegD, memory) },
-            Instruction::ANA_E => { self.ana(Operand8::RegE, memory) },
-            Instruction::ANA_H => { self.ana(Operand8::RegH, memory) },
-            Instruction::ANA_L => { self.ana(Operand8::RegL, memory)} ,
-            Instruction::ANA_M => { self.ana(Operand8::Memory, memory) },
-            Instruction::ANA_A => { self.ana(Operand8::RegA, memory) },
-            Instruction::XRA_B => { self.xra(Operand8::RegB, memory) },
-            Instruction::XRA_C => { self.xra(Operand8::RegC, memory) },
-            Instruction::XRA_D => { self.xra(Operand8::RegD, memory) },
-            Instruction::XRA_E => { self.xra(Operand8::RegE, memory) },
-            Instruction::XRA_H => { self.xra(Operand8::RegH, memory) },
-            Instruction::XRA_L => { self.xra(Operand8::RegL, memory) },
-            Instruction::XRA_M => { self.xra(Operand8::Memory, memory) },
-            Instruction::XRA_A => { self.xra(Operand8::RegA, memory) },
-            Instruction::ORA_B => { self.ora(Operand8::RegB, memory) },
-            Instruction::ORA_C => { self.ora(Operand8::RegC, memory) },
-            Instruction::ORA_D => { self.ora(Operand8::RegD, memory) },
-            Instruction::ORA_E => { self.ora(Operand8::RegE, memory) },
-            Instruction::ORA_H => { self.ora(Operand8::RegH, memory) },
-            Instruction::ORA_L => { self.ora(Operand8::RegL, memory) },
-            Instruction::ORA_M => { self.ora(Operand8::Memory, memory) },
-            Instruction::ORA_A => { self.ora(Operand8::RegA, memory) },
-            Instruction::CMP_B => { self.cmp(Operand8::RegB, memory) },
-            Instruction::CMP_C => { self.cmp(Operand8::RegC, memory) },
-            Instruction::CMP_D => { self.cmp(Operand8::RegD, memory) },
-            Instruction::CMP_E => { self.cmp(Operand8::RegE, memory) },
-            Instruction::CMP_H => { self.cmp(Operand8::RegH, memory) },
-            Instruction::CMP_L => { self.cmp(Operand8::RegL, memory) },
-            Instruction::CMP_M => { self.cmp(Operand8::Memory, memory) },
-            Instruction::CMP_A => { self.cmp(Operand8::RegA, memory) },
+            Instruction::MOV_B_C => { self.mov(Operand8::RegB, Operand8::RegC) },
+            Instruction::MOV_B_D => { self.mov(Operand8::RegB, Operand8::RegD) },
+            Instruction::MOV_B_E => { self.mov(Operand8::RegB, Operand8::RegE) },
+            Instruction::MOV_B_H => { self.mov(Operand8::RegB, Operand8::RegH) },
+            Instruction::MOV_B_L => { self.mov(Operand8::RegB, Operand8::RegL) },
+            Instruction::MOV_B_M => { self.mov(Operand8::RegB, Operand8::Memory) },
+            Instruction::MOV_B_A => { self.mov(Operand8::RegB, Operand8::RegA) },
+            Instruction::MOV_C_B => { self.mov(Operand8::RegC, Operand8::RegB) },
+            Instruction::MOV_C_D => { self.mov(Operand8::RegC, Operand8::RegD) },
+            Instruction::MOV_C_E => { self.mov(Operand8::RegC, Operand8::RegE) },
+            Instruction::MOV_C_H => { self.mov(Operand8::RegC, Operand8::RegH) },
+            Instruction::MOV_C_L => { self.mov(Operand8::RegC, Operand8::RegL) },
+            Instruction::MOV_C_M => { self.mov(Operand8::RegC, Operand8::Memory) },
+            Instruction::MOV_C_A => { self.mov(Operand8::RegC, Operand8::RegA) },
+            Instruction::MOV_D_B => { self.mov(Operand8::RegD, Operand8::RegB) },
+            Instruction::MOV_D_C => { self.mov(Operand8::RegD, Operand8::RegC) },
+            Instruction::MOV_D_E => { self.mov(Operand8::RegD, Operand8::RegE) },
+            Instruction::MOV_D_H => { self.mov(Operand8::RegD, Operand8::RegH) },
+            Instruction::MOV_D_L => { self.mov(Operand8::RegD, Operand8::RegL) },
+            Instruction::MOV_D_M => { self.mov(Operand8::RegD, Operand8::Memory) },
+            Instruction::MOV_D_A => { self.mov(Operand8::RegD, Operand8::RegA) },
+            Instruction::MOV_E_B => { self.mov(Operand8::RegE, Operand8::RegB) },
+            Instruction::MOV_E_C => { self.mov(Operand8::RegE, Operand8::RegC) },
+            Instruction::MOV_E_D => { self.mov(Operand8::RegE, Operand8::RegD) },
+            Instruction::MOV_E_H => { self.mov(Operand8::RegE, Operand8::RegH) },
+            Instruction::MOV_E_L => { self.mov(Operand8::RegE, Operand8::RegL) },
+            Instruction::MOV_E_M => { self.mov(Operand8::RegE, Operand8::Memory) },
+            Instruction::MOV_E_A => { self.mov(Operand8::RegE, Operand8::RegA) },
+            Instruction::MOV_H_B => { self.mov(Operand8::RegH, Operand8::RegB) },
+            Instruction::MOV_H_C => { self.mov(Operand8::RegH, Operand8::RegC) },
+            Instruction::MOV_H_D => { self.mov(Operand8::RegH, Operand8::RegD) },
+            Instruction::MOV_H_E => { self.mov(Operand8::RegE, Operand8::RegE) },
+            Instruction::MOV_H_L => { self.mov(Operand8::RegH, Operand8::RegL) },
+            Instruction::MOV_H_M => { self.mov(Operand8::RegH, Operand8::Memory) },
+            Instruction::MOV_H_A => { self.mov(Operand8::RegH, Operand8::RegA) },
+            Instruction::MOV_L_B => { self.mov(Operand8::RegL, Operand8::RegB) },
+            Instruction::MOV_L_C => { self.mov(Operand8::RegL, Operand8::RegC) },
+            Instruction::MOV_L_D => { self.mov(Operand8::RegL, Operand8::RegD) },
+            Instruction::MOV_L_E => { self.mov(Operand8::RegL, Operand8::RegE) },
+            Instruction::MOV_L_H => { self.mov(Operand8::RegL, Operand8::RegH) },
+            Instruction::MOV_L_M => { self.mov(Operand8::RegL, Operand8::Memory) },
+            Instruction::MOV_L_A => { self.mov(Operand8::RegL, Operand8::RegA) },
+            Instruction::MOV_M_B => { self.mov(Operand8::Memory, Operand8::RegB) },
+            Instruction::MOV_M_C => { self.mov(Operand8::Memory, Operand8::RegC) },
+            Instruction::MOV_M_D => { self.mov(Operand8::Memory, Operand8::RegD) },
+            Instruction::MOV_M_E => { self.mov(Operand8::Memory, Operand8::RegE) },
+            Instruction::MOV_M_H => { self.mov(Operand8::Memory, Operand8::RegH) },
+            Instruction::MOV_M_L => { self.mov(Operand8::Memory, Operand8::RegL) },
+            Instruction::MOV_M_A => { self.mov(Operand8::Memory, Operand8::RegH) },
+            Instruction::MOV_A_B => { self.mov(Operand8::RegA, Operand8::RegB) },
+            Instruction::MOV_A_C => { self.mov(Operand8::RegA, Operand8::RegC) },
+            Instruction::MOV_A_D => { self.mov(Operand8::RegA, Operand8::RegD) },
+            Instruction::MOV_A_E => { self.mov(Operand8::RegA, Operand8::RegE) },
+            Instruction::MOV_A_H => { self.mov(Operand8::RegA, Operand8::RegH) },
+            Instruction::MOV_A_L => { self.mov(Operand8::RegA, Operand8::RegL) },
+            Instruction::MOV_A_M => { self.mov(Operand8::RegA, Operand8::Memory) },
+            Instruction::STAX_B => { self.stax(Operand16::RegPairB) },
+            Instruction::STAX_D => { self.stax(Operand16::RegPairD) },
+            Instruction::LDAX_B => { self.ldax(Operand16::RegPairB) },
+            Instruction::LDAX_D => { self.ldax(Operand16::RegPairD)},
+            Instruction::ADD_B => { self.add(Operand8::RegB) },
+            Instruction::ADD_C => { self.add(Operand8::RegC) },
+            Instruction::ADD_D => { self.add(Operand8::RegD) },
+            Instruction::ADD_E => { self.add(Operand8::RegE) },
+            Instruction::ADD_H => { self.add(Operand8::RegH) },
+            Instruction::ADD_L => { self.add(Operand8::RegL) },
+            Instruction::ADD_M => { self.add(Operand8::Memory) },
+            Instruction::ADD_A => { self.add(Operand8::RegA) },
+            Instruction::ADC_B => { self.adc(Operand8::RegB) },
+            Instruction::ADC_C => { self.adc(Operand8::RegC) },
+            Instruction::ADC_D => { self.adc(Operand8::RegD) },
+            Instruction::ADC_E => { self.adc(Operand8::RegE) },
+            Instruction::ADC_H => { self.adc(Operand8::RegH) },
+            Instruction::ADC_L => { self.adc(Operand8::RegL) },
+            Instruction::ADC_M => { self.adc(Operand8::Memory) },
+            Instruction::ADC_A => { self.adc(Operand8::RegA) },
+            Instruction::SUB_B => { self.sub(Operand8::RegB) },
+            Instruction::SUB_C => { self.sub(Operand8::RegC) },
+            Instruction::SUB_D => { self.sub(Operand8::RegD) },
+            Instruction::SUB_E => { self.sub(Operand8::RegE) },
+            Instruction::SUB_H => { self.sub(Operand8::RegH) },
+            Instruction::SUB_L => { self.sub(Operand8::RegL) },
+            Instruction::SUB_M => { self.sub(Operand8::Memory) },
+            Instruction::SUB_A => { self.sub(Operand8::RegA) },
+            Instruction::SBB_B => { self.sbb(Operand8::RegB) },
+            Instruction::SBB_C => { self.sbb(Operand8::RegC) },
+            Instruction::SBB_D => { self.sbb(Operand8::RegD) },
+            Instruction::SBB_E => { self.sbb(Operand8::RegE) },
+            Instruction::SBB_H => { self.sbb(Operand8::RegH) },
+            Instruction::SBB_L => { self.sbb(Operand8::RegL) },
+            Instruction::SBB_M => { self.sbb(Operand8::Memory) },
+            Instruction::SBB_A => { self.sbb(Operand8::RegA)  },
+            Instruction::ANA_B => { self.ana(Operand8::RegB) },
+            Instruction::ANA_C => { self.ana(Operand8::RegC) },
+            Instruction::ANA_D => { self.ana(Operand8::RegD) },
+            Instruction::ANA_E => { self.ana(Operand8::RegE) },
+            Instruction::ANA_H => { self.ana(Operand8::RegH) },
+            Instruction::ANA_L => { self.ana(Operand8::RegL)} ,
+            Instruction::ANA_M => { self.ana(Operand8::Memory) },
+            Instruction::ANA_A => { self.ana(Operand8::RegA) },
+            Instruction::XRA_B => { self.xra(Operand8::RegB) },
+            Instruction::XRA_C => { self.xra(Operand8::RegC) },
+            Instruction::XRA_D => { self.xra(Operand8::RegD) },
+            Instruction::XRA_E => { self.xra(Operand8::RegE) },
+            Instruction::XRA_H => { self.xra(Operand8::RegH) },
+            Instruction::XRA_L => { self.xra(Operand8::RegL) },
+            Instruction::XRA_M => { self.xra(Operand8::Memory) },
+            Instruction::XRA_A => { self.xra(Operand8::RegA) },
+            Instruction::ORA_B => { self.ora(Operand8::RegB) },
+            Instruction::ORA_C => { self.ora(Operand8::RegC) },
+            Instruction::ORA_D => { self.ora(Operand8::RegD) },
+            Instruction::ORA_E => { self.ora(Operand8::RegE) },
+            Instruction::ORA_H => { self.ora(Operand8::RegH) },
+            Instruction::ORA_L => { self.ora(Operand8::RegL) },
+            Instruction::ORA_M => { self.ora(Operand8::Memory) },
+            Instruction::ORA_A => { self.ora(Operand8::RegA) },
+            Instruction::CMP_B => { self.cmp(Operand8::RegB) },
+            Instruction::CMP_C => { self.cmp(Operand8::RegC) },
+            Instruction::CMP_D => { self.cmp(Operand8::RegD) },
+            Instruction::CMP_E => { self.cmp(Operand8::RegE) },
+            Instruction::CMP_H => { self.cmp(Operand8::RegH) },
+            Instruction::CMP_L => { self.cmp(Operand8::RegL) },
+            Instruction::CMP_M => { self.cmp(Operand8::Memory) },
+            Instruction::CMP_A => { self.cmp(Operand8::RegA) },
             Instruction::RLC => { self.rlc() },
             Instruction::RRC => { self.rrc() },
             Instruction::RAL => { self.ral() },
             Instruction::RAR => { self.rar() },
-            Instruction::PUSH_B => { self.push(Operand16::RegPairB, memory) },
-            Instruction::PUSH_D => { self.push(Operand16::RegPairD, memory) },
-            Instruction::PUSH_H => { self.push(Operand16::RegPairH, memory) },
-            Instruction::PUSH_PSW => { self.push(Operand16::PSW, memory) },
-            Instruction::POP_B => { self.pop(Operand16::RegPairB, memory) },
-            Instruction::POP_D => { self.pop(Operand16::RegPairD, memory) },
-            Instruction::POP_H => { self.pop(Operand16::RegPairH, memory) },
-            Instruction::POP_PSW => { self.pop(Operand16::PSW, memory) },
+            Instruction::PUSH_B => { self.push(Operand16::RegPairB) },
+            Instruction::PUSH_D => { self.push(Operand16::RegPairD) },
+            Instruction::PUSH_H => { self.push(Operand16::RegPairH) },
+            Instruction::PUSH_PSW => { self.push(Operand16::PSW) },
+            Instruction::POP_B => { self.pop(Operand16::RegPairB) },
+            Instruction::POP_D => { self.pop(Operand16::RegPairD) },
+            Instruction::POP_H => { self.pop(Operand16::RegPairH) },
+            Instruction::POP_PSW => { self.pop(Operand16::PSW) },
             Instruction::DAD_B => { self.dad(Operand16::RegPairB) },
             Instruction::DAD_D => { self.dad(Operand16::RegPairD) },
             Instruction::DAD_H => { self.dad(Operand16::RegPairH) },
@@ -991,68 +992,68 @@ impl Intel8080 {
             Instruction::DCX_H => { self.dcx(Operand16::RegPairH) },
             Instruction::DCX_SP => { self.dcx(Operand16::PSW) },
             Instruction::XCHG => { self.xchg() },
-            Instruction::XTHL => { self.xthl(memory) },
+            Instruction::XTHL => { self.xthl() },
             Instruction::SPHL => { self.sphl() },
-            Instruction::LXI_B => { self.load_imm16(memory); self.lxi(Operand16::RegPairB) },
-            Instruction::LXI_D => { self.load_imm16(memory); self.lxi(Operand16::RegPairD) },
-            Instruction::LXI_H => { self.load_imm16(memory); self.lxi(Operand16::RegPairH) },
-            Instruction::LXI_SP => { self.load_imm16(memory); self.lxi(Operand16::PSW) },
-            Instruction::MVI_B => { self.load_imm(memory); self.mov(Operand8::RegB, Operand8::Immediate, memory) },
-            Instruction::MVI_C => { self.load_imm(memory); self.mov(Operand8::RegC, Operand8::Immediate, memory) },
-            Instruction::MVI_D => { self.load_imm(memory); self.mov(Operand8::RegD, Operand8::Immediate, memory) },
-            Instruction::MVI_E => { self.load_imm(memory); self.mov(Operand8::RegE, Operand8::Immediate, memory) },
-            Instruction::MVI_H => { self.load_imm(memory); self.mov(Operand8::RegH, Operand8::Immediate, memory) },
-            Instruction::MVI_L => { self.load_imm(memory); self.mov(Operand8::RegL, Operand8::Immediate, memory) },
-            Instruction::MVI_M => { self.load_imm(memory); self.mov(Operand8::Memory, Operand8::Immediate, memory) },
-            Instruction::MVI_A => { self.load_imm(memory); self.mov(Operand8::RegA, Operand8::Immediate, memory) },
-            Instruction::ADI => { self.load_imm(memory); self.add(Operand8::Immediate, memory); },
-            Instruction::ACI => { self.load_imm(memory); self.adc(Operand8::Immediate, memory); },
-            Instruction::SUI => { self.load_imm(memory); self.sub(Operand8::Immediate, memory); },
-            Instruction::SBI => { self.load_imm(memory); self.sbb(Operand8::Immediate, memory); },
-            Instruction::ANI => { self.load_imm(memory); self.ana(Operand8::Immediate, memory); },
-            Instruction::XRI => { self.load_imm(memory); self.xra(Operand8::Immediate, memory); },
-            Instruction::ORI => { self.load_imm(memory); self.ora(Operand8::Immediate, memory); },
-            Instruction::CPI => { self.load_imm(memory); self.cmp(Operand8::Immediate, memory); },
-            Instruction::STA => { self.load_imm16(memory); self.sta(memory); },
-            Instruction::LDA => { self.load_imm16(memory); self.lda(memory) },
-            Instruction::SHLD => { self.load_imm16(memory); self.shld(memory); },
-            Instruction::LHLD => { self.load_imm16(memory); self.lhld(memory); },
+            Instruction::LXI_B => { self.load_imm16(); self.lxi(Operand16::RegPairB) },
+            Instruction::LXI_D => { self.load_imm16(); self.lxi(Operand16::RegPairD) },
+            Instruction::LXI_H => { self.load_imm16(); self.lxi(Operand16::RegPairH) },
+            Instruction::LXI_SP => { self.load_imm16(); self.lxi(Operand16::PSW) },
+            Instruction::MVI_B => { self.load_imm(); self.mov(Operand8::RegB, Operand8::Immediate) },
+            Instruction::MVI_C => { self.load_imm(); self.mov(Operand8::RegC, Operand8::Immediate) },
+            Instruction::MVI_D => { self.load_imm(); self.mov(Operand8::RegD, Operand8::Immediate) },
+            Instruction::MVI_E => { self.load_imm(); self.mov(Operand8::RegE, Operand8::Immediate) },
+            Instruction::MVI_H => { self.load_imm(); self.mov(Operand8::RegH, Operand8::Immediate) },
+            Instruction::MVI_L => { self.load_imm(); self.mov(Operand8::RegL, Operand8::Immediate) },
+            Instruction::MVI_M => { self.load_imm(); self.mov(Operand8::Memory, Operand8::Immediate) },
+            Instruction::MVI_A => { self.load_imm(); self.mov(Operand8::RegA, Operand8::Immediate) },
+            Instruction::ADI => { self.load_imm(); self.add(Operand8::Immediate); },
+            Instruction::ACI => { self.load_imm(); self.adc(Operand8::Immediate); },
+            Instruction::SUI => { self.load_imm(); self.sub(Operand8::Immediate); },
+            Instruction::SBI => { self.load_imm(); self.sbb(Operand8::Immediate); },
+            Instruction::ANI => { self.load_imm(); self.ana(Operand8::Immediate); },
+            Instruction::XRI => { self.load_imm(); self.xra(Operand8::Immediate); },
+            Instruction::ORI => { self.load_imm(); self.ora(Operand8::Immediate); },
+            Instruction::CPI => { self.load_imm(); self.cmp(Operand8::Immediate); },
+            Instruction::STA => { self.load_imm16(); self.sta(); },
+            Instruction::LDA => { self.load_imm16(); self.lda() },
+            Instruction::SHLD => { self.load_imm16(); self.shld(); },
+            Instruction::LHLD => { self.load_imm16(); self.lhld(); },
             Instruction::PCHL => { self.pchl(); },
-            Instruction::JMP => { self.load_imm16(memory); self.jmp(); },
-            Instruction::JC => { self.load_imm16(memory); self.jc(); },
-            Instruction::JNC => { self.load_imm16(memory); self.jnc(); },
-            Instruction::JZ => { self.load_imm16(memory); self.jz(); },
-            Instruction::JNZ => { self.load_imm16(memory); self.jnz(); },
-            Instruction::JM => { self.load_imm16(memory); self.jm(); },
-            Instruction::JP => { self.load_imm16(memory); self.jp(); },
-            Instruction::JPE => { self.load_imm16(memory); self.jpe(); },
-            Instruction::JPO => { self.load_imm16(memory); self.jpo(); },
-            Instruction::CALL => { self.load_imm16(memory); self.call(memory); },
-            Instruction::CC => { self.load_imm16(memory); self.cc(memory); },
-            Instruction::CNC => { self.load_imm16(memory); self.cnc(memory); },
-            Instruction::CZ => { self.load_imm16(memory); self.cz(memory); },
-            Instruction::CNZ => { self.load_imm16(memory); self.cnz(memory); },
-            Instruction::CM => { self.load_imm16(memory); self.cm(memory); },
-            Instruction::CP => { self.load_imm16(memory); self.cp(memory); },
-            Instruction::CPE => { self.load_imm16(memory); self.cpe(memory); },
-            Instruction::CPO => { self.load_imm16(memory); self.cpo(memory); },
-            Instruction::RET => { self.ret(memory); },
-            Instruction::RC => { self.rc(memory); },
-            Instruction::RNC => { self.rnc(memory); },
-            Instruction::RZ => { self.rz(memory); },
-            Instruction::RNZ => { self.rnz(memory); },
-            Instruction::RM => { self.rm(memory); },
-            Instruction::RP => { self.rp(memory); },
-            Instruction::RPE => { self.rpe(memory); },
-            Instruction::RPO => { self.rpo(memory); },
-            Instruction::RST_1 => { self.rst(0, memory) },
-            Instruction::RST_2 => { self.rst(1, memory) },
-            Instruction::RST_3 => { self.rst(2, memory) },
-            Instruction::RST_4 => { self.rst(3, memory) },
-            Instruction::RST_5 => { self.rst(4, memory) },
-            Instruction::RST_6 => { self.rst(5, memory) },
-            Instruction::RST_7 => { self.rst(6, memory) },
-            Instruction::RST_8 => { self.rst(7, memory) },
+            Instruction::JMP => { self.load_imm16(); self.jmp(); },
+            Instruction::JC => { self.load_imm16(); self.jc(); },
+            Instruction::JNC => { self.load_imm16(); self.jnc(); },
+            Instruction::JZ => { self.load_imm16(); self.jz(); },
+            Instruction::JNZ => { self.load_imm16(); self.jnz(); },
+            Instruction::JM => { self.load_imm16(); self.jm(); },
+            Instruction::JP => { self.load_imm16(); self.jp(); },
+            Instruction::JPE => { self.load_imm16(); self.jpe(); },
+            Instruction::JPO => { self.load_imm16(); self.jpo(); },
+            Instruction::CALL => { self.load_imm16(); self.call(); },
+            Instruction::CC => { self.load_imm16(); self.cc(); },
+            Instruction::CNC => { self.load_imm16(); self.cnc(); },
+            Instruction::CZ => { self.load_imm16(); self.cz(); },
+            Instruction::CNZ => { self.load_imm16(); self.cnz(); },
+            Instruction::CM => { self.load_imm16(); self.cm(); },
+            Instruction::CP => { self.load_imm16(); self.cp(); },
+            Instruction::CPE => { self.load_imm16(); self.cpe(); },
+            Instruction::CPO => { self.load_imm16(); self.cpo(); },
+            Instruction::RET => { self.ret(); },
+            Instruction::RC => { self.rc(); },
+            Instruction::RNC => { self.rnc(); },
+            Instruction::RZ => { self.rz(); },
+            Instruction::RNZ => { self.rnz(); },
+            Instruction::RM => { self.rm(); },
+            Instruction::RP => { self.rp(); },
+            Instruction::RPE => { self.rpe(); },
+            Instruction::RPO => { self.rpo(); },
+            Instruction::RST_1 => { self.rst(0) },
+            Instruction::RST_2 => { self.rst(1) },
+            Instruction::RST_3 => { self.rst(2) },
+            Instruction::RST_4 => { self.rst(3) },
+            Instruction::RST_5 => { self.rst(4) },
+            Instruction::RST_6 => { self.rst(5) },
+            Instruction::RST_7 => { self.rst(6) },
+            Instruction::RST_8 => { self.rst(7) },
             Instruction::EI => { self.ei() },
             Instruction::DI => { self.di() },
             Instruction::IN => { self.input() },
@@ -1062,18 +1063,18 @@ impl Intel8080 {
         }
     }
 
-    fn load_imm(&mut self, memory: &Vec<u8>) {
-        self.registers.set_w(memory[self.registers.pc() as usize]);
+    fn load_imm(&mut self) {
+        self.registers.set_w(self.memory[self.registers.pc() as usize]);
         self.registers.set_pc(self.registers.pc() + 1);
     }
 
-    fn load_imm16(&mut self, memory: &Vec<u8>) {
-        self.registers.set_z(memory[self.registers.pc() as usize]);
-        self.registers.set_w(memory[self.registers.pc() as usize + 1]);
+    fn load_imm16(&mut self) {
+        self.registers.set_z(self.memory[self.registers.pc() as usize]);
+        self.registers.set_w(self.memory[self.registers.pc() as usize + 1]);
         self.registers.set_pc(self.registers.pc() + 2);
     }
 
-    fn get_src(&mut self, src: Operand8, memory: &Vec<u8>) -> u8 {
+    fn get_src(&mut self, src: Operand8) -> u8 {
         match src {
             Operand8::RegB => { self.registers.b() },
             Operand8::RegC => { self.registers.c() },
@@ -1081,13 +1082,13 @@ impl Intel8080 {
             Operand8::RegE => { self.registers.e() },
             Operand8::RegH => { self.registers.h() },
             Operand8::RegL => { self.registers.l() },
-            Operand8::Memory => { memory[self.registers.pair_h() as usize] }
+            Operand8::Memory => { self.memory[self.registers.pair_h() as usize] }
             Operand8::RegA => { self.registers.accumulator() },
             Operand8::Immediate => { self.registers.w() }
         }
     }
 
-    fn write_dst(&mut self, dst: Operand8, val: u8, memory: &mut Vec<u8>) {
+    fn write_dst(&mut self, dst: Operand8, val: u8) {
         match dst {
             Operand8::RegB => { self.registers.set_b(val) },
             Operand8::RegC => { self.registers.set_c(val) },
@@ -1095,7 +1096,7 @@ impl Intel8080 {
             Operand8::RegE => { self.registers.set_e(val) },
             Operand8::RegH => { self.registers.set_h(val) },
             Operand8::RegL => { self.registers.set_l(val) },
-            Operand8::Memory => { memory[self.registers.pair_h() as usize] = val; },
+            Operand8::Memory => { self.memory[self.registers.pair_h() as usize] = val; },
             Operand8::RegA => { self.registers.set_accumulator(val) },
             Operand8::Immediate => {/* INVALID */} 
         }
@@ -1140,21 +1141,21 @@ impl Intel8080 {
     }
 
     // Increment Register or Memory
-    fn inr(&mut self, reg: Operand8, memory: &mut Vec<u8>) {
-        let val = self.get_src(reg, memory);
+    fn inr(&mut self, reg: Operand8) {
+        let val = self.get_src(reg);
         let val = val.wrapping_add(1);
-        self.write_dst(reg, val, memory);
+        self.write_dst(reg, val);
         self.set_condition(val, val == 0, val % 0x10 == 0);
     }
 
     // Decrement Register or Memory
-    fn dcr(&mut self, reg: Operand8, memory: &mut Vec<u8>) {
+    fn dcr(&mut self, reg: Operand8) {
         // Note: This is equivalent in Intel8080 to adding 0xFF to the value
         // due to the usage of 2s complement representation. Carry bits will be 
         // set accordingly.
-        let orig_val = self.get_src(reg, memory);
+        let orig_val = self.get_src(reg);
         let new_val = orig_val.wrapping_sub(1);
-        self.write_dst(reg, new_val, memory);
+        self.write_dst(reg, new_val);
         self.set_condition(new_val, new_val != 255, orig_val & 0xF != 0);
     }
 
@@ -1182,41 +1183,41 @@ impl Intel8080 {
     }
 
     // Move
-    fn mov(&mut self, src: Operand8, dst: Operand8, memory: &mut Vec<u8>) {
-        let src = self.get_src(src, memory);
-        self.write_dst(dst, src, memory);
+    fn mov(&mut self, src: Operand8, dst: Operand8) {
+        let src = self.get_src(src);
+        self.write_dst(dst, src);
     }
 
     // Store Accumulator
-    fn stax(&mut self, dst: Operand16, memory: &mut Vec<u8>) {
+    fn stax(&mut self, dst: Operand16) {
         match dst {
             Operand16::RegPairB => {
-                memory[self.registers.pair_b() as usize] = self.registers.accumulator();
+                self.memory[self.registers.pair_b() as usize] = self.registers.accumulator();
             },
             Operand16::RegPairD => {
-                memory[self.registers.pair_d() as usize] = self.registers.accumulator();
+                self.memory[self.registers.pair_d() as usize] = self.registers.accumulator();
             },
             _ => {/* INVALID */}
         }
     }
 
     // Load Accumulator
-    fn ldax(&mut self, dst: Operand16, memory: &mut Vec<u8>) {
+    fn ldax(&mut self, dst: Operand16) {
         match dst {
             Operand16::RegPairB => {
-                self.registers.set_accumulator(memory[self.registers.pair_b() as usize]);
+                self.registers.set_accumulator(self.memory[self.registers.pair_b() as usize]);
             },
             Operand16::RegPairD => {
-                self.registers.set_accumulator(memory[self.registers.pair_d() as usize]);
+                self.registers.set_accumulator(self.memory[self.registers.pair_d() as usize]);
             },
             _ => {/* INVALID */}
         }
     }
 
     // ADD Register or Memory to Accumulator
-    fn add(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+    fn add(&mut self, src: Operand8) {
         let old_val: u8 = self.registers.accumulator();
-        let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory)); 
+        let new_val: u8 = old_val.wrapping_add(self.get_src(src)); 
         
         let carry: bool = check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
@@ -1226,9 +1227,9 @@ impl Intel8080 {
     }
 
     // ADD Register or Memory to Accumulator With Carry
-    fn adc(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+    fn adc(&mut self, src: Operand8) {
         let old_val: u8 = self.registers.accumulator();
-        let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory))
+        let new_val: u8 = old_val.wrapping_add(self.get_src(src))
             .wrapping_add(self.registers.status_carry() as u8); 
         
         let carry: bool = check_carry(old_val, new_val);
@@ -1239,9 +1240,9 @@ impl Intel8080 {
     }
 
     // Subtract Register or Memory From Accumulator
-    fn sub(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+    fn sub(&mut self, src: Operand8) {
         let old_val = self.registers.accumulator();
-        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
+        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src)));
 
         let carry: bool = check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
@@ -1251,9 +1252,9 @@ impl Intel8080 {
     } 
 
     // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb(&mut self, src: Operand8, memory: &mut Vec<u8>) {
+    fn sbb(&mut self, src: Operand8) {
         let old_val = self.registers.accumulator();
-        let new_val = twos_complement(self.get_src(src, memory)
+        let new_val = twos_complement(self.get_src(src)
             .wrapping_add(self.registers.status_carry() as u8));
         let new_val = old_val.wrapping_add(new_val);
 
@@ -1265,30 +1266,30 @@ impl Intel8080 {
     }
 
     // Logical and Register or Memory With Accumulator
-    fn ana(&mut self, src: Operand8, memory: &mut Vec<u8>) {
-        let val: u8 = self.registers.accumulator() & self.get_src(src, memory);
+    fn ana(&mut self, src: Operand8) {
+        let val: u8 = self.registers.accumulator() & self.get_src(src);
         self.set_condition(val, false, false);
         self.registers.set_accumulator(val);
     }
 
     // Logical Exclusive-Or Register or Memory with Accumulator
-    fn xra(&mut self, src: Operand8, memory: &mut Vec<u8>) {
-        let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
+    fn xra(&mut self, src: Operand8) {
+        let val: u8 = self.registers.accumulator() ^ self.get_src(src);
         self.set_condition(val, false, false);
         self.registers.set_accumulator(val);
     }
 
     // Logical or Register or Memory with Accumulator
-    fn ora(&mut self, src: Operand8, memory: &mut Vec<u8>) {
-        let val: u8 = self.registers.accumulator() | self.get_src(src, memory);
+    fn ora(&mut self, src: Operand8) {
+        let val: u8 = self.registers.accumulator() | self.get_src(src);
         self.set_condition(val, false, false);
         self.registers.set_accumulator(val);
     }
 
     // Compare Register or Memory with Accumulator
-    fn cmp(&mut self, src:Operand8, memory: &mut Vec<u8>) {
+    fn cmp(&mut self, src:Operand8) {
         let old_val = self.registers.accumulator();
-        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
+        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src)));
 
         let carry: bool = check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
@@ -1361,7 +1362,7 @@ impl Intel8080 {
     }
 
     // Push Data Onto Stack
-    fn push(&mut self, src: Operand16, memory: &mut Vec<u8>) {
+    fn push(&mut self, src: Operand16) {
         let first_register = match src {
             Operand16::RegPairB => { self.registers.b() },
             Operand16::RegPairD => { self.registers.d() },
@@ -1378,15 +1379,15 @@ impl Intel8080 {
             Operand16::Immediate => { 0 /* INVALID */ }
         };
 
-        memory[(self.registers.sp() - 1) as usize] = first_register;
-        memory[(self.registers.sp() - 2) as usize] = second_register;
+        self.memory[(self.registers.sp() - 1) as usize] = first_register;
+        self.memory[(self.registers.sp() - 2) as usize] = second_register;
         self.registers.set_sp(self.registers.sp() - 2);
     }
 
     // Pop Data Off Stack
-    fn pop(&mut self, dst: Operand16, memory: &Vec<u8>) {
-        let first_register = memory[(self.registers.sp() + 1) as usize];
-        let second_register = memory[(self.registers.sp()) as usize];
+    fn pop(&mut self, dst: Operand16) {
+        let first_register = self.memory[(self.registers.sp() + 1) as usize];
+        let second_register = self.memory[(self.registers.sp()) as usize];
 
         match dst {
             Operand16::RegPairB => {
@@ -1414,7 +1415,7 @@ impl Intel8080 {
     // Double Add
     fn dad(&mut self, src: Operand16) {
         let val = self.get_src_16(src);
-
+        
         let carry = (val & 0x80) | (self.registers.pair_h() & 0x80) != 0;
         self.registers.set_status_carry(carry);
         
@@ -1441,10 +1442,10 @@ impl Intel8080 {
     }
 
     // Exchange Stack
-    fn xthl(&mut self, memory: &mut Vec<u8>) {
+    fn xthl(&mut self) {
         let temp = self.registers.l();
-        self.registers.set_l(memory[self.registers.sp() as usize + 1]);
-        memory[self.registers.sp() as usize + 1] = temp;
+        self.registers.set_l(self.memory[self.registers.sp() as usize + 1]);
+        self.memory[self.registers.sp() as usize + 1] = temp;
     }
 
     // Load SP From H and L
@@ -1459,25 +1460,25 @@ impl Intel8080 {
     }
 
     // Store Accumulator Direct
-    fn sta(&mut self, memory: &mut Vec<u8>) {
-        memory[self.registers.pair_w() as usize] = self.registers.accumulator();
+    fn sta(&mut self) {
+        self.memory[self.registers.pair_w() as usize] = self.registers.accumulator();
     }
 
     // Load Accumulator Direct
-    fn lda(&mut self, memory: &Vec<u8>) {
-        self.registers.set_accumulator(memory[self.registers.pair_w() as usize]);
+    fn lda(&mut self) {
+        self.registers.set_accumulator(self.memory[self.registers.pair_w() as usize]);
     }
 
     // Store H and L Direct
-    fn shld(&mut self, memory: &mut Vec<u8>) {
-        memory[self.registers.pair_w() as usize] = self.registers.l();
-        memory[self.registers.pair_w() as usize + 1] = self.registers.h();
+    fn shld(&mut self) {
+        self.memory[self.registers.pair_w() as usize] = self.registers.l();
+        self.memory[self.registers.pair_w() as usize + 1] = self.registers.h();
     }
 
     // Load H and L Direct
-    fn lhld(&mut self, memory: &Vec<u8>) {
-        self.registers.set_l(memory[self.registers.pair_w() as usize]);
-        self.registers.set_h(memory[self.registers.pair_w() as usize + 1]);
+    fn lhld(&mut self) {
+        self.registers.set_l(self.memory[self.registers.pair_w() as usize]);
+        self.registers.set_h(self.memory[self.registers.pair_w() as usize + 1]);
     }
 
     // Load Program Counter
@@ -1547,137 +1548,137 @@ impl Intel8080 {
     }
 
     // Call
-    fn call(&mut self, memory: &mut Vec<u8>) {
-        memory[self.registers.sp() as usize] = (self.registers.pc() >> 8) as u8;
-        memory[self.registers.sp() as usize + 1] = (self.registers.pc() & 0xFF) as u8;
+    fn call(&mut self) {
+        self.memory[self.registers.sp() as usize] = (self.registers.pc() >> 8) as u8;
+        self.memory[self.registers.sp() as usize + 1] = (self.registers.pc() & 0xFF) as u8;
         self.registers.set_sp(self.registers.sp() + 2);
         self.jmp();
     }
 
     // Call If Carry
-    fn cc(&mut self, memory: &mut Vec<u8>) {
+    fn cc(&mut self) {
         if self.registers.status_carry() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Call If No Carry
-    fn cnc(&mut self, memory: &mut Vec<u8>) {
+    fn cnc(&mut self) {
         if !self.registers.status_carry() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Call If Zero
-    fn cz(&mut self, memory: &mut Vec<u8>) {
+    fn cz(&mut self) {
         if self.registers.status_zero() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Call If Not Zero
-    fn cnz(&mut self, memory: &mut Vec<u8>) {
+    fn cnz(&mut self) {
         if !self.registers.status_zero() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Call If Minus
-    fn cm(&mut self, memory: &mut Vec<u8>) {
+    fn cm(&mut self) {
         if self.registers.status_sign() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Call If Plus
-    fn cp(&mut self, memory: &mut Vec<u8>) {
+    fn cp(&mut self) {
         if !self.registers.status_sign() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Call If Parity Even
-    fn cpe(&mut self, memory: &mut Vec<u8>) {
+    fn cpe(&mut self) {
         if self.registers.status_parity() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Call If Parity Odd
-    fn cpo(&mut self, memory: &mut Vec<u8>) {
+    fn cpo(&mut self) {
         if !self.registers.status_parity() {
-            self.call(memory);
+            self.call();
         }
     }
 
     // Return
-    fn ret(&mut self, memory: &Vec<u8>) {
-        let new_pc:u16 = make_u16(memory[self.registers.sp() as usize - 1],
-                                  memory[self.registers.sp() as usize - 2]);
+    fn ret(&mut self) {
+        let new_pc:u16 = make_u16(self.memory[self.registers.sp() as usize - 1],
+                                  self.memory[self.registers.sp() as usize - 2]);
         self.registers.set_pc(new_pc);
         self.registers.set_sp(self.registers.sp() - 2);
     }
 
     // Return If Carry
-    fn rc(&mut self, memory: &Vec<u8>) {
+    fn rc(&mut self) {
         if self.registers.status_carry() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
     // Return If No Carry
-    fn rnc(&mut self, memory: &Vec<u8>) {
+    fn rnc(&mut self) {
         if !self.registers.status_carry() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
     // Return If Zero
-    fn rz(&mut self, memory: &Vec<u8>) {
+    fn rz(&mut self) {
         if self.registers.status_zero() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
     // Return If Not Zero
-    fn rnz(&mut self, memory: &Vec<u8>) {
+    fn rnz(&mut self) {
         if !self.registers.status_zero() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
     // Return If Minus
-    fn rm(&mut self, memory: &Vec<u8>) {
+    fn rm(&mut self) {
         if self.registers.status_sign() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
     // Return If Plus
-    fn rp(&mut self, memory: &Vec<u8>) {
+    fn rp(&mut self) {
         if !self.registers.status_sign() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
     // Return If Parity Even
-    fn rpe(&mut self, memory: &Vec<u8>) {
+    fn rpe(&mut self) {
         if self.registers.status_parity() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
     // Return If Parity Odd
-    fn rpo(&mut self, memory: &Vec<u8>) {
+    fn rpo(&mut self) {
         if !self.registers.status_parity() {
-            self.ret(memory);
+            self.ret();
         }
     }
 
-    fn rst(&mut self, exp: u8, memory: &mut Vec<u8>) {
+    fn rst(&mut self, exp: u8) {
         self.registers.set_w(0);
         self.registers.set_z(exp << 3);
-        self.call(memory);
+        self.call();
     }
     // Enable Interrupts
     fn ei(&mut self) {
