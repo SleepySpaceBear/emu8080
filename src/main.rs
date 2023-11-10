@@ -3,8 +3,7 @@ mod cpu;
 mod utils;
 
 fn main() {
-    let mut regs = registers::Registers::new();
-    println!("Hello, world!");
-    regs.set_pair_b(2000);
-    println!("{}", regs.pair_b());
+    let mut memory: [u8; 200] = [0;200];
+
+    let mut cpu = cpu::Intel8080::new(&mut memory);
 }

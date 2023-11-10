@@ -801,16 +801,21 @@ impl From<u8> for Operand16 {
     }
 }
 
-struct Intel8080<'a> {
+pub struct Intel8080<'a, const N: usize> {
     registers: Registers,
-    memory: &'a mut [u8],
+    memory: &'a mut [u8; N],
     inte: bool,
     stopped: bool
 }
 
-impl<'a> Intel8080<'a> {
-    fn init(&mut self, memory: &'a mut [u8]) {
-        self.memory = memory;
+impl<'a, const N: usize> Intel8080<'a, N> {
+    pub fn new(memory: &'a mut [u8; N]) -> Self {
+        Self {
+            registers: Registers::new(),
+            memory,
+            inte: false,
+            stopped: false
+        }
     }
 
     fn fetch_instruction(&mut self) -> Instruction {
