@@ -786,7 +786,8 @@ enum Operand16 {
     RegPairD = 1,
     RegPairH = 2,
     PSW = 3,
-    Immediate = 4
+    Immediate = 4,
+    SP = 5
 }
 
 impl From<u8> for Operand16 {
@@ -796,7 +797,8 @@ impl From<u8> for Operand16 {
             1 => return Operand16::RegPairD,
             2 => return Operand16::RegPairH,
             3 => return Operand16::PSW,
-            _ => return Operand16::Immediate
+            4 => return Operand16::Immediate,
+            _ => return Operand16::SP
         }
     }
 }
@@ -987,22 +989,22 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Instruction::DAD_B => { self.dad(Operand16::RegPairB) },
             Instruction::DAD_D => { self.dad(Operand16::RegPairD) },
             Instruction::DAD_H => { self.dad(Operand16::RegPairH) },
-            Instruction::DAD_SP => { self.dad(Operand16::PSW) },
+            Instruction::DAD_SP => { self.dad(Operand16::SP) },
             Instruction::INX_B => { self.inx(Operand16::RegPairB) },
             Instruction::INX_D => { self.inx(Operand16::RegPairD) },
             Instruction::INX_H => { self.inx(Operand16::RegPairH) },
-            Instruction::INX_SP => { self.inx(Operand16::PSW) },
+            Instruction::INX_SP => { self.inx(Operand16::SP) },
             Instruction::DCX_B => { self.dcx(Operand16::RegPairB) },
             Instruction::DCX_D => { self.dcx(Operand16::RegPairD) },
             Instruction::DCX_H => { self.dcx(Operand16::RegPairH) },
-            Instruction::DCX_SP => { self.dcx(Operand16::PSW) },
+            Instruction::DCX_SP => { self.dcx(Operand16::SP) },
             Instruction::XCHG => { self.xchg() },
             Instruction::XTHL => { self.xthl() },
             Instruction::SPHL => { self.sphl() },
             Instruction::LXI_B => { self.load_imm16(); self.lxi(Operand16::RegPairB) },
             Instruction::LXI_D => { self.load_imm16(); self.lxi(Operand16::RegPairD) },
             Instruction::LXI_H => { self.load_imm16(); self.lxi(Operand16::RegPairH) },
-            Instruction::LXI_SP => { self.load_imm16(); self.lxi(Operand16::PSW) },
+            Instruction::LXI_SP => { self.load_imm16(); self.lxi(Operand16::SP) },
             Instruction::MVI_B => { self.load_imm(); self.mov(Operand8::RegB, Operand8::Immediate) },
             Instruction::MVI_C => { self.load_imm(); self.mov(Operand8::RegC, Operand8::Immediate) },
             Instruction::MVI_D => { self.load_imm(); self.mov(Operand8::RegD, Operand8::Immediate) },
@@ -1113,7 +1115,8 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Operand16::RegPairB => { self.registers.pair_b() },
             Operand16::RegPairD => { self.registers.pair_d() },
             Operand16::RegPairH => { self.registers.pair_h() },
-            Operand16::Immediate => { self.registers.pair_w() }
+            Operand16::Immediate => { self.registers.pair_w() },
+            Operand16::SP => { self.registers.sp() }
         }
     }
 
@@ -1122,8 +1125,9 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Operand16::PSW => { self.registers.set_psw(val) },
             Operand16::RegPairB => { self.registers.set_pair_b(val) },
             Operand16::RegPairD => { self.registers.set_pair_d(val) },
-            Operand16::RegPairH => { self.registers.set_pair_h(val) }
-            Operand16::Immediate => {/* INVALID */}
+            Operand16::RegPairH => { self.registers.set_pair_h(val) },
+            Operand16::Immediate => {/* INVALID */},
+            Operand16::SP => { self.registers.set_sp(val) }
         }
     }
 
