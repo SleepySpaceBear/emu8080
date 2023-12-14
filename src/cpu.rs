@@ -763,22 +763,6 @@ enum Operand8 {
     Immediate = 8
 }
 
-impl From<u8> for Operand8 {
-    fn from(orig: u8) -> Self {
-        match orig {
-            0 => return Operand8::RegB,
-            1 => return Operand8::RegC,
-            2 => return Operand8::RegD,
-            3 => return Operand8::RegE,
-            4 => return Operand8::RegH,
-            5 => return Operand8::RegL,
-            6 => return Operand8::Memory,
-            7 => return Operand8::RegA,
-            _ => return Operand8::Immediate
-        }
-    }
-}
-
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
 enum Operand16 {
@@ -790,24 +774,28 @@ enum Operand16 {
     SP = 5
 }
 
-impl From<u8> for Operand16 {
-    fn from(orig: u8) -> Self {
-        match orig {
-            0 => return Operand16::RegPairB,
-            1 => return Operand16::RegPairD,
-            2 => return Operand16::RegPairH,
-            3 => return Operand16::PSW,
-            4 => return Operand16::Immediate,
-            _ => return Operand16::SP
-        }
-    }
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[repr(u8)]
+enum MachineCycle {
+    InstructionFetch,
+    MemoryRead,
+    MemoryWrite,
+    StackRead,
+    StackWrite,
+    InputRead,
+    OutputWrite,
+    InterruptAcknowledge,
+    HaltAcknowledge,
+    InterruptAcknowledgeWhileHalt
 }
+
 
 pub struct Intel8080<'a, const N: usize> {
     registers: Registers,
     memory: &'a mut [u8; N],
-    inte: bool,
-    stopped: bool
+    status_callback: Option<fn(u8)>,
+    stopped: bool,
+    inte: bool
 }
 
 impl<'a, const N: usize> Intel8080<'a, N> {
@@ -815,15 +803,58 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         Self {
             registers: Registers::new(),
             memory,
-            inte: false,
-            stopped: false
+            status_callback: None,
+            stopped: false,
+            inte: false
+        }
+    }
+
+    fn start_cycle(&self, cycle_type: MachineCycle) {
+        if self.status_callback.is_some() { 
+            let status: u8 = match cycle_type {
+                MachineCycle::InstructionFetch => { 0b10100010 },
+                MachineCycle::MemoryRead => { 0b10000010},
+                MachineCycle::MemoryWrite => { 0b00000000 },
+                MachineCycle::StackRead => { 0b10000110 },
+                MachineCycle::StackWrite => { 0b00000100},
+                MachineCycle::InputRead => { 0b01000010 },
+                MachineCycle::OutputWrite => { 0b00010000 },
+                MachineCycle::InterruptAcknowledge => { 0b00100011 },
+                MachineCycle::HaltAcknowledge => { 0b10001010 },
+                MachineCycle::InterruptAcknowledgeWhileHalt => { 0b00101011 }
+            };
+
+            self.status_callback.unwrap()(status);
         }
     }
 
     fn fetch_instruction(&mut self) -> Instruction {
+        self.start_cycle(MachineCycle::InstructionFetch);
         let instruction: Instruction = Instruction::from(self.memory[self.registers.pc() as usize]);   
         self.registers.set_pc(self.registers.pc() + 1);
         return instruction
+    }
+
+    fn read_memory(&self, addr: u16) -> u8 {
+        self.start_cycle(MachineCycle::MemoryRead);
+        self.memory[addr as usize]
+    }
+
+    fn write_memory(&mut self, addr: u16, val: u8) {
+        self.start_cycle(MachineCycle::MemoryWrite);
+        self.memory[addr as usize] = val
+    }
+
+    fn pop_stack(&mut self) -> u8 {
+        self.start_cycle(MachineCycle::StackRead);
+        self.registers.set_sp(self.registers.sp() + 1);
+        self.memory[self.registers.sp() as usize - 1]
+    }
+
+    fn push_stack(&mut self, val: u8) {
+        self.start_cycle(MachineCycle::StackWrite);
+        self.registers.set_sp(self.registers.sp() - 1);
+        self.memory[self.registers.sp() as usize - 1] = val;
     }
 
     fn do_instruction(&mut self) {
@@ -1066,19 +1097,21 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Instruction::IN => { self.input() },
             Instruction::OUT => { self.out() },
             Instruction::HLT => { self.hlt() },
-            _ => { }
+            _ => {}
         }
     }
 
     fn load_imm(&mut self) {
-        self.registers.set_w(self.memory[self.registers.pc() as usize]);
-        self.registers.set_pc(self.registers.pc() + 1);
+        let val = self.fetch_instruction() as u8;
+        self.registers.set_z(val);
     }
 
     fn load_imm16(&mut self) {
-        self.registers.set_z(self.memory[self.registers.pc() as usize]);
-        self.registers.set_w(self.memory[self.registers.pc() as usize + 1]);
-        self.registers.set_pc(self.registers.pc() + 2);
+        let val = self.fetch_instruction() as u8;
+        self.registers.set_z(val);
+        
+        let val = self.fetch_instruction() as u8;
+        self.registers.set_w(val);
     }
 
     fn get_src(&mut self, src: Operand8) -> u8 {
@@ -1091,7 +1124,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Operand8::RegL => { self.registers.l() },
             Operand8::Memory => { self.memory[self.registers.pair_h() as usize] }
             Operand8::RegA => { self.registers.accumulator() },
-            Operand8::Immediate => { self.registers.w() }
+            Operand8::Immediate => { self.registers.z() }
         }
     }
 
@@ -1201,10 +1234,10 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     fn stax(&mut self, dst: Operand16) {
         match dst {
             Operand16::RegPairB => {
-                self.memory[self.registers.pair_b() as usize] = self.registers.accumulator();
+                self.write_memory(self.registers.pair_b(), self.registers.accumulator());
             },
             Operand16::RegPairD => {
-                self.memory[self.registers.pair_d() as usize] = self.registers.accumulator();
+                self.write_memory(self.registers.pair_d(), self.registers.accumulator());
             },
             _ => {/* INVALID */}
         }
@@ -1214,10 +1247,10 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     fn ldax(&mut self, dst: Operand16) {
         match dst {
             Operand16::RegPairB => {
-                self.registers.set_accumulator(self.memory[self.registers.pair_b() as usize]);
+                self.registers.set_accumulator(self.read_memory(self.registers.pair_b()));
             },
             Operand16::RegPairD => {
-                self.registers.set_accumulator(self.memory[self.registers.pair_d() as usize]);
+                self.registers.set_accumulator(self.read_memory(self.registers.pair_d()));
             },
             _ => {/* INVALID */}
         }
@@ -1232,7 +1265,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val as u8);
-        self.set_condition(new_val as u8, carry, aux_carry)
+        self.set_condition(new_val as u8, carry, aux_carry);
     }
 
     // ADD Register or Memory to Accumulator With Carry
@@ -1245,7 +1278,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val, carry, aux_carry)
+        self.set_condition(new_val, carry, aux_carry);
     }
 
     // Subtract Register or Memory From Accumulator
@@ -1257,7 +1290,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val, carry, aux_carry)
+        self.set_condition(new_val, carry, aux_carry);
     } 
 
     // Subtract Register or Memory From Accumulator With Borrow
@@ -1271,7 +1304,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val, carry, aux_carry)
+        self.set_condition(new_val, carry, aux_carry);
     }
 
     // Logical and Register or Memory With Accumulator
@@ -1377,7 +1410,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Operand16::RegPairD => { self.registers.d() },
             Operand16::RegPairH => { self.registers.h() },
             Operand16::PSW => { self.registers.status() },
-            Operand16::Immediate => { 0 /* INVALID */ }
+            _ => { 0 }
         };
         
         let second_register = match src {
@@ -1385,18 +1418,17 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Operand16::RegPairD => { self.registers.e() },
             Operand16::RegPairH => { self.registers.l() },
             Operand16::PSW => { self.registers.accumulator() },
-            Operand16::Immediate => { 0 /* INVALID */ }
+            _ => { 0 }
         };
-
-        self.memory[(self.registers.sp() - 1) as usize] = first_register;
-        self.memory[(self.registers.sp() - 2) as usize] = second_register;
-        self.registers.set_sp(self.registers.sp() - 2);
+        
+        self.push_stack(first_register);
+        self.push_stack(second_register);
     }
 
     // Pop Data Off Stack
     fn pop(&mut self, dst: Operand16) {
-        let first_register = self.memory[(self.registers.sp() + 1) as usize];
-        let second_register = self.memory[(self.registers.sp()) as usize];
+        let second_register = self.pop_stack();
+        let first_register = self.pop_stack();
 
         match dst {
             Operand16::RegPairB => {
@@ -1416,9 +1448,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
                 self.registers.set_accumulator(second_register);
             },
             _ => { /* INVALID */ }
-        }
-
-        self.registers.set_sp(self.registers.sp() + 2);
+        };
     }
 
     // Double Add
@@ -1434,13 +1464,13 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     // Increment Register Pair
     fn inx(&mut self, src: Operand16) {
         let val = self.get_src_16(src);
-        self.write_dst_16(src, val + 1)
+        self.write_dst_16(src, val + 1);
     }
 
     // Decrement Register Pair
     fn dcx(&mut self, src: Operand16) {
         let val = self.get_src_16(src);
-        self.write_dst_16(src, val - 1)
+        self.write_dst_16(src, val - 1);
     }
 
     // Exchange Registers
@@ -1470,24 +1500,24 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 
     // Store Accumulator Direct
     fn sta(&mut self) {
-        self.memory[self.registers.pair_w() as usize] = self.registers.accumulator();
+        self.write_memory(self.registers.pair_w(), self.registers.accumulator());
     }
 
     // Load Accumulator Direct
     fn lda(&mut self) {
-        self.registers.set_accumulator(self.memory[self.registers.pair_w() as usize]);
+        self.registers.set_accumulator(self.read_memory(self.registers.pair_w()));
     }
 
     // Store H and L Direct
     fn shld(&mut self) {
-        self.memory[self.registers.pair_w() as usize] = self.registers.l();
-        self.memory[self.registers.pair_w() as usize + 1] = self.registers.h();
+        self.write_memory(self.registers.pair_w(), self.registers.l());
+        self.write_memory(self.registers.pair_w() + 1, self.registers.h());
     }
 
     // Load H and L Direct
     fn lhld(&mut self) {
-        self.registers.set_l(self.memory[self.registers.pair_w() as usize]);
-        self.registers.set_h(self.memory[self.registers.pair_w() as usize + 1]);
+        self.registers.set_l(self.read_memory(self.registers.pair_w()));
+        self.registers.set_h(self.read_memory(self.registers.pair_w()));
     }
 
     // Load Program Counter
@@ -1558,9 +1588,8 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 
     // Call
     fn call(&mut self) {
-        self.memory[self.registers.sp() as usize] = (self.registers.pc() >> 8) as u8;
-        self.memory[self.registers.sp() as usize + 1] = (self.registers.pc() & 0xFF) as u8;
-        self.registers.set_sp(self.registers.sp() + 2);
+        self.push_stack((self.registers.pc() >> 8) as u8);
+        self.push_stack((self.registers.pc() & 0xFF) as u8);
         self.jmp();
     }
 
@@ -1622,10 +1651,9 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 
     // Return
     fn ret(&mut self) {
-        let new_pc:u16 = make_u16(self.memory[self.registers.sp() as usize - 1],
-                                  self.memory[self.registers.sp() as usize - 2]);
+        let new_pc:u16 = make_u16(self.pop_stack(),
+                                  self.pop_stack());
         self.registers.set_pc(new_pc);
-        self.registers.set_sp(self.registers.sp() - 2);
     }
 
     // Return If Carry
@@ -1701,12 +1729,12 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 
     // Input
     fn input(&self) {
-
+        self.start_cycle(MachineCycle::InputRead);
     }
 
     // Output
     fn out(&self) {
-
+        self.start_cycle(MachineCycle::OutputWrite);
     }
 
     // Halt
