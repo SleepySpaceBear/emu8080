@@ -808,8 +808,21 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             inte: false
         }
     }
+    
+    pub fn step(&mut self) {
+        let instruction = self.fetch_instruction();
+        self.do_instruction(instruction)
+    }
 
-    fn start_cycle(&self, cycle_type: MachineCycle) {
+    pub fn interrupt(&mut self, instruction: Instruction) {
+        self.do_instruction(instruction)
+    }
+
+    pub fn set_machine_cycle_callback(&mut self, func: Option<fn(u8)>) {
+        self.status_callback = func
+    }
+
+    fn start_machine_cycle(&self, cycle_type: MachineCycle) {
         if self.status_callback.is_some() { 
             let status: u8 = match cycle_type {
                 MachineCycle::InstructionFetch => { 0b10100010 },
@@ -829,36 +842,36 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     }
 
     fn fetch_instruction(&mut self) -> Instruction {
-        self.start_cycle(MachineCycle::InstructionFetch);
+        self.start_machine_cycle(MachineCycle::InstructionFetch);
         let instruction: Instruction = Instruction::from(self.memory[self.registers.pc() as usize]);   
         self.registers.set_pc(self.registers.pc() + 1);
         return instruction
     }
 
     fn read_memory(&self, addr: u16) -> u8 {
-        self.start_cycle(MachineCycle::MemoryRead);
+        self.start_machine_cycle(MachineCycle::MemoryRead);
         self.memory[addr as usize]
     }
 
     fn write_memory(&mut self, addr: u16, val: u8) {
-        self.start_cycle(MachineCycle::MemoryWrite);
+        self.start_machine_cycle(MachineCycle::MemoryWrite);
         self.memory[addr as usize] = val
     }
 
     fn pop_stack(&mut self) -> u8 {
-        self.start_cycle(MachineCycle::StackRead);
+        self.start_machine_cycle(MachineCycle::StackRead);
         self.registers.set_sp(self.registers.sp() + 1);
         self.memory[self.registers.sp() as usize - 1]
     }
 
     fn push_stack(&mut self, val: u8) {
-        self.start_cycle(MachineCycle::StackWrite);
+        self.start_machine_cycle(MachineCycle::StackWrite);
         self.registers.set_sp(self.registers.sp() - 1);
         self.memory[self.registers.sp() as usize - 1] = val;
     }
 
-    fn do_instruction(&mut self) {
-        let instruction = self.fetch_instruction();
+
+    fn do_instruction(&mut self, instruction: Instruction) {
 
         match instruction {
             Instruction::STC => { self.stc() },
@@ -1729,17 +1742,16 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 
     // Input
     fn input(&self) {
-        self.start_cycle(MachineCycle::InputRead);
+        self.start_machine_cycle(MachineCycle::InputRead);
     }
 
     // Output
     fn out(&self) {
-        self.start_cycle(MachineCycle::OutputWrite);
+        self.start_machine_cycle(MachineCycle::OutputWrite);
     }
 
     // Halt
     fn hlt(&mut self) {
         self.stopped = true;
     }
-
 }
