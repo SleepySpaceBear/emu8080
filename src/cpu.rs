@@ -871,246 +871,245 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     }
 
 
-    fn do_instruction(&mut self, instruction: Instruction) {
-
-        match instruction {
-            Instruction::STC => { self.stc() },
-            Instruction::CMC => { self.cmc() },
-            Instruction::INR_B => { self.inr(Operand8::RegB) },
-            Instruction::INR_C => { self.inr(Operand8::RegC) },
-            Instruction::INR_D => { self.inr(Operand8::RegD) },
-            Instruction::INR_E => { self.inr(Operand8::RegE) },
-            Instruction::INR_H => { self.inr(Operand8::RegH) },
-            Instruction::INR_L => { self.inr(Operand8::RegL) },
-            Instruction::INR_M => { self.inr(Operand8::Memory) },
-            Instruction::INR_A => { self.inr(Operand8::RegA) },
-            Instruction::DCR_B => { self.dcr(Operand8::RegB) },
-            Instruction::DCR_C => { self.dcr(Operand8::RegC)  },
-            Instruction::DCR_D => { self.dcr(Operand8::RegD) },
-            Instruction::DCR_E => { self.dcr(Operand8::RegE) },
-            Instruction::DCR_H => { self.dcr(Operand8::RegH) },
-            Instruction::DCR_L => { self.dcr(Operand8::RegL) },
-            Instruction::DCR_M => { self.dcr(Operand8::Memory) },
-            Instruction::DCR_A => { self.dcr(Operand8::RegA) },
-            Instruction::CMA => { self.cma() },
-            Instruction::DAA => { self.daa() },
-            Instruction::MOV_B_C => { self.mov(Operand8::RegB, Operand8::RegC) },
-            Instruction::MOV_B_D => { self.mov(Operand8::RegB, Operand8::RegD) },
-            Instruction::MOV_B_E => { self.mov(Operand8::RegB, Operand8::RegE) },
-            Instruction::MOV_B_H => { self.mov(Operand8::RegB, Operand8::RegH) },
-            Instruction::MOV_B_L => { self.mov(Operand8::RegB, Operand8::RegL) },
-            Instruction::MOV_B_M => { self.mov(Operand8::RegB, Operand8::Memory) },
-            Instruction::MOV_B_A => { self.mov(Operand8::RegB, Operand8::RegA) },
-            Instruction::MOV_C_B => { self.mov(Operand8::RegC, Operand8::RegB) },
-            Instruction::MOV_C_D => { self.mov(Operand8::RegC, Operand8::RegD) },
-            Instruction::MOV_C_E => { self.mov(Operand8::RegC, Operand8::RegE) },
-            Instruction::MOV_C_H => { self.mov(Operand8::RegC, Operand8::RegH) },
-            Instruction::MOV_C_L => { self.mov(Operand8::RegC, Operand8::RegL) },
-            Instruction::MOV_C_M => { self.mov(Operand8::RegC, Operand8::Memory) },
-            Instruction::MOV_C_A => { self.mov(Operand8::RegC, Operand8::RegA) },
-            Instruction::MOV_D_B => { self.mov(Operand8::RegD, Operand8::RegB) },
-            Instruction::MOV_D_C => { self.mov(Operand8::RegD, Operand8::RegC) },
-            Instruction::MOV_D_E => { self.mov(Operand8::RegD, Operand8::RegE) },
-            Instruction::MOV_D_H => { self.mov(Operand8::RegD, Operand8::RegH) },
-            Instruction::MOV_D_L => { self.mov(Operand8::RegD, Operand8::RegL) },
-            Instruction::MOV_D_M => { self.mov(Operand8::RegD, Operand8::Memory) },
-            Instruction::MOV_D_A => { self.mov(Operand8::RegD, Operand8::RegA) },
-            Instruction::MOV_E_B => { self.mov(Operand8::RegE, Operand8::RegB) },
-            Instruction::MOV_E_C => { self.mov(Operand8::RegE, Operand8::RegC) },
-            Instruction::MOV_E_D => { self.mov(Operand8::RegE, Operand8::RegD) },
-            Instruction::MOV_E_H => { self.mov(Operand8::RegE, Operand8::RegH) },
-            Instruction::MOV_E_L => { self.mov(Operand8::RegE, Operand8::RegL) },
-            Instruction::MOV_E_M => { self.mov(Operand8::RegE, Operand8::Memory) },
-            Instruction::MOV_E_A => { self.mov(Operand8::RegE, Operand8::RegA) },
-            Instruction::MOV_H_B => { self.mov(Operand8::RegH, Operand8::RegB) },
-            Instruction::MOV_H_C => { self.mov(Operand8::RegH, Operand8::RegC) },
-            Instruction::MOV_H_D => { self.mov(Operand8::RegH, Operand8::RegD) },
-            Instruction::MOV_H_E => { self.mov(Operand8::RegE, Operand8::RegE) },
-            Instruction::MOV_H_L => { self.mov(Operand8::RegH, Operand8::RegL) },
-            Instruction::MOV_H_M => { self.mov(Operand8::RegH, Operand8::Memory) },
-            Instruction::MOV_H_A => { self.mov(Operand8::RegH, Operand8::RegA) },
-            Instruction::MOV_L_B => { self.mov(Operand8::RegL, Operand8::RegB) },
-            Instruction::MOV_L_C => { self.mov(Operand8::RegL, Operand8::RegC) },
-            Instruction::MOV_L_D => { self.mov(Operand8::RegL, Operand8::RegD) },
-            Instruction::MOV_L_E => { self.mov(Operand8::RegL, Operand8::RegE) },
-            Instruction::MOV_L_H => { self.mov(Operand8::RegL, Operand8::RegH) },
-            Instruction::MOV_L_M => { self.mov(Operand8::RegL, Operand8::Memory) },
-            Instruction::MOV_L_A => { self.mov(Operand8::RegL, Operand8::RegA) },
-            Instruction::MOV_M_B => { self.mov(Operand8::Memory, Operand8::RegB) },
-            Instruction::MOV_M_C => { self.mov(Operand8::Memory, Operand8::RegC) },
-            Instruction::MOV_M_D => { self.mov(Operand8::Memory, Operand8::RegD) },
-            Instruction::MOV_M_E => { self.mov(Operand8::Memory, Operand8::RegE) },
-            Instruction::MOV_M_H => { self.mov(Operand8::Memory, Operand8::RegH) },
-            Instruction::MOV_M_L => { self.mov(Operand8::Memory, Operand8::RegL) },
-            Instruction::MOV_M_A => { self.mov(Operand8::Memory, Operand8::RegH) },
-            Instruction::MOV_A_B => { self.mov(Operand8::RegA, Operand8::RegB) },
-            Instruction::MOV_A_C => { self.mov(Operand8::RegA, Operand8::RegC) },
-            Instruction::MOV_A_D => { self.mov(Operand8::RegA, Operand8::RegD) },
-            Instruction::MOV_A_E => { self.mov(Operand8::RegA, Operand8::RegE) },
-            Instruction::MOV_A_H => { self.mov(Operand8::RegA, Operand8::RegH) },
-            Instruction::MOV_A_L => { self.mov(Operand8::RegA, Operand8::RegL) },
-            Instruction::MOV_A_M => { self.mov(Operand8::RegA, Operand8::Memory) },
-            Instruction::STAX_B => { self.stax(Operand16::RegPairB) },
-            Instruction::STAX_D => { self.stax(Operand16::RegPairD) },
-            Instruction::LDAX_B => { self.ldax(Operand16::RegPairB) },
-            Instruction::LDAX_D => { self.ldax(Operand16::RegPairD)},
-            Instruction::ADD_B => { self.add(Operand8::RegB) },
-            Instruction::ADD_C => { self.add(Operand8::RegC) },
-            Instruction::ADD_D => { self.add(Operand8::RegD) },
-            Instruction::ADD_E => { self.add(Operand8::RegE) },
-            Instruction::ADD_H => { self.add(Operand8::RegH) },
-            Instruction::ADD_L => { self.add(Operand8::RegL) },
-            Instruction::ADD_M => { self.add(Operand8::Memory) },
-            Instruction::ADD_A => { self.add(Operand8::RegA) },
-            Instruction::ADC_B => { self.adc(Operand8::RegB) },
-            Instruction::ADC_C => { self.adc(Operand8::RegC) },
-            Instruction::ADC_D => { self.adc(Operand8::RegD) },
-            Instruction::ADC_E => { self.adc(Operand8::RegE) },
-            Instruction::ADC_H => { self.adc(Operand8::RegH) },
-            Instruction::ADC_L => { self.adc(Operand8::RegL) },
-            Instruction::ADC_M => { self.adc(Operand8::Memory) },
-            Instruction::ADC_A => { self.adc(Operand8::RegA) },
-            Instruction::SUB_B => { self.sub(Operand8::RegB) },
-            Instruction::SUB_C => { self.sub(Operand8::RegC) },
-            Instruction::SUB_D => { self.sub(Operand8::RegD) },
-            Instruction::SUB_E => { self.sub(Operand8::RegE) },
-            Instruction::SUB_H => { self.sub(Operand8::RegH) },
-            Instruction::SUB_L => { self.sub(Operand8::RegL) },
-            Instruction::SUB_M => { self.sub(Operand8::Memory) },
-            Instruction::SUB_A => { self.sub(Operand8::RegA) },
-            Instruction::SBB_B => { self.sbb(Operand8::RegB) },
-            Instruction::SBB_C => { self.sbb(Operand8::RegC) },
-            Instruction::SBB_D => { self.sbb(Operand8::RegD) },
-            Instruction::SBB_E => { self.sbb(Operand8::RegE) },
-            Instruction::SBB_H => { self.sbb(Operand8::RegH) },
-            Instruction::SBB_L => { self.sbb(Operand8::RegL) },
-            Instruction::SBB_M => { self.sbb(Operand8::Memory) },
-            Instruction::SBB_A => { self.sbb(Operand8::RegA)  },
-            Instruction::ANA_B => { self.ana(Operand8::RegB) },
-            Instruction::ANA_C => { self.ana(Operand8::RegC) },
-            Instruction::ANA_D => { self.ana(Operand8::RegD) },
-            Instruction::ANA_E => { self.ana(Operand8::RegE) },
-            Instruction::ANA_H => { self.ana(Operand8::RegH) },
-            Instruction::ANA_L => { self.ana(Operand8::RegL)} ,
-            Instruction::ANA_M => { self.ana(Operand8::Memory) },
-            Instruction::ANA_A => { self.ana(Operand8::RegA) },
-            Instruction::XRA_B => { self.xra(Operand8::RegB) },
-            Instruction::XRA_C => { self.xra(Operand8::RegC) },
-            Instruction::XRA_D => { self.xra(Operand8::RegD) },
-            Instruction::XRA_E => { self.xra(Operand8::RegE) },
-            Instruction::XRA_H => { self.xra(Operand8::RegH) },
-            Instruction::XRA_L => { self.xra(Operand8::RegL) },
-            Instruction::XRA_M => { self.xra(Operand8::Memory) },
-            Instruction::XRA_A => { self.xra(Operand8::RegA) },
-            Instruction::ORA_B => { self.ora(Operand8::RegB) },
-            Instruction::ORA_C => { self.ora(Operand8::RegC) },
-            Instruction::ORA_D => { self.ora(Operand8::RegD) },
-            Instruction::ORA_E => { self.ora(Operand8::RegE) },
-            Instruction::ORA_H => { self.ora(Operand8::RegH) },
-            Instruction::ORA_L => { self.ora(Operand8::RegL) },
-            Instruction::ORA_M => { self.ora(Operand8::Memory) },
-            Instruction::ORA_A => { self.ora(Operand8::RegA) },
-            Instruction::CMP_B => { self.cmp(Operand8::RegB) },
-            Instruction::CMP_C => { self.cmp(Operand8::RegC) },
-            Instruction::CMP_D => { self.cmp(Operand8::RegD) },
-            Instruction::CMP_E => { self.cmp(Operand8::RegE) },
-            Instruction::CMP_H => { self.cmp(Operand8::RegH) },
-            Instruction::CMP_L => { self.cmp(Operand8::RegL) },
-            Instruction::CMP_M => { self.cmp(Operand8::Memory) },
-            Instruction::CMP_A => { self.cmp(Operand8::RegA) },
-            Instruction::RLC => { self.rlc() },
-            Instruction::RRC => { self.rrc() },
-            Instruction::RAL => { self.ral() },
-            Instruction::RAR => { self.rar() },
-            Instruction::PUSH_B => { self.push(Operand16::RegPairB) },
-            Instruction::PUSH_D => { self.push(Operand16::RegPairD) },
-            Instruction::PUSH_H => { self.push(Operand16::RegPairH) },
-            Instruction::PUSH_PSW => { self.push(Operand16::PSW) },
-            Instruction::POP_B => { self.pop(Operand16::RegPairB) },
-            Instruction::POP_D => { self.pop(Operand16::RegPairD) },
-            Instruction::POP_H => { self.pop(Operand16::RegPairH) },
-            Instruction::POP_PSW => { self.pop(Operand16::PSW) },
-            Instruction::DAD_B => { self.dad(Operand16::RegPairB) },
-            Instruction::DAD_D => { self.dad(Operand16::RegPairD) },
-            Instruction::DAD_H => { self.dad(Operand16::RegPairH) },
-            Instruction::DAD_SP => { self.dad(Operand16::SP) },
-            Instruction::INX_B => { self.inx(Operand16::RegPairB) },
-            Instruction::INX_D => { self.inx(Operand16::RegPairD) },
-            Instruction::INX_H => { self.inx(Operand16::RegPairH) },
-            Instruction::INX_SP => { self.inx(Operand16::SP) },
-            Instruction::DCX_B => { self.dcx(Operand16::RegPairB) },
-            Instruction::DCX_D => { self.dcx(Operand16::RegPairD) },
-            Instruction::DCX_H => { self.dcx(Operand16::RegPairH) },
-            Instruction::DCX_SP => { self.dcx(Operand16::SP) },
-            Instruction::XCHG => { self.xchg() },
-            Instruction::XTHL => { self.xthl() },
-            Instruction::SPHL => { self.sphl() },
-            Instruction::LXI_B => { self.load_imm16(); self.lxi(Operand16::RegPairB) },
-            Instruction::LXI_D => { self.load_imm16(); self.lxi(Operand16::RegPairD) },
-            Instruction::LXI_H => { self.load_imm16(); self.lxi(Operand16::RegPairH) },
-            Instruction::LXI_SP => { self.load_imm16(); self.lxi(Operand16::SP) },
-            Instruction::MVI_B => { self.load_imm(); self.mov(Operand8::RegB, Operand8::Immediate) },
-            Instruction::MVI_C => { self.load_imm(); self.mov(Operand8::RegC, Operand8::Immediate) },
-            Instruction::MVI_D => { self.load_imm(); self.mov(Operand8::RegD, Operand8::Immediate) },
-            Instruction::MVI_E => { self.load_imm(); self.mov(Operand8::RegE, Operand8::Immediate) },
-            Instruction::MVI_H => { self.load_imm(); self.mov(Operand8::RegH, Operand8::Immediate) },
-            Instruction::MVI_L => { self.load_imm(); self.mov(Operand8::RegL, Operand8::Immediate) },
-            Instruction::MVI_M => { self.load_imm(); self.mov(Operand8::Memory, Operand8::Immediate) },
-            Instruction::MVI_A => { self.load_imm(); self.mov(Operand8::RegA, Operand8::Immediate) },
-            Instruction::ADI => { self.load_imm(); self.add(Operand8::Immediate); },
-            Instruction::ACI => { self.load_imm(); self.adc(Operand8::Immediate); },
-            Instruction::SUI => { self.load_imm(); self.sub(Operand8::Immediate); },
-            Instruction::SBI => { self.load_imm(); self.sbb(Operand8::Immediate); },
-            Instruction::ANI => { self.load_imm(); self.ana(Operand8::Immediate); },
-            Instruction::XRI => { self.load_imm(); self.xra(Operand8::Immediate); },
-            Instruction::ORI => { self.load_imm(); self.ora(Operand8::Immediate); },
-            Instruction::CPI => { self.load_imm(); self.cmp(Operand8::Immediate); },
-            Instruction::STA => { self.load_imm16(); self.sta(); },
-            Instruction::LDA => { self.load_imm16(); self.lda() },
-            Instruction::SHLD => { self.load_imm16(); self.shld(); },
-            Instruction::LHLD => { self.load_imm16(); self.lhld(); },
-            Instruction::PCHL => { self.pchl(); },
-            Instruction::JMP => { self.load_imm16(); self.jmp(); },
-            Instruction::JC => { self.load_imm16(); self.jc(); },
-            Instruction::JNC => { self.load_imm16(); self.jnc(); },
-            Instruction::JZ => { self.load_imm16(); self.jz(); },
-            Instruction::JNZ => { self.load_imm16(); self.jnz(); },
-            Instruction::JM => { self.load_imm16(); self.jm(); },
-            Instruction::JP => { self.load_imm16(); self.jp(); },
-            Instruction::JPE => { self.load_imm16(); self.jpe(); },
-            Instruction::JPO => { self.load_imm16(); self.jpo(); },
-            Instruction::CALL => { self.load_imm16(); self.call(); },
-            Instruction::CC => { self.load_imm16(); self.cc(); },
-            Instruction::CNC => { self.load_imm16(); self.cnc(); },
-            Instruction::CZ => { self.load_imm16(); self.cz(); },
-            Instruction::CNZ => { self.load_imm16(); self.cnz(); },
-            Instruction::CM => { self.load_imm16(); self.cm(); },
-            Instruction::CP => { self.load_imm16(); self.cp(); },
-            Instruction::CPE => { self.load_imm16(); self.cpe(); },
-            Instruction::CPO => { self.load_imm16(); self.cpo(); },
-            Instruction::RET => { self.ret(); },
-            Instruction::RC => { self.rc(); },
-            Instruction::RNC => { self.rnc(); },
-            Instruction::RZ => { self.rz(); },
-            Instruction::RNZ => { self.rnz(); },
-            Instruction::RM => { self.rm(); },
-            Instruction::RP => { self.rp(); },
-            Instruction::RPE => { self.rpe(); },
-            Instruction::RPO => { self.rpo(); },
-            Instruction::RST_1 => { self.rst(0) },
-            Instruction::RST_2 => { self.rst(1) },
-            Instruction::RST_3 => { self.rst(2) },
-            Instruction::RST_4 => { self.rst(3) },
-            Instruction::RST_5 => { self.rst(4) },
-            Instruction::RST_6 => { self.rst(5) },
-            Instruction::RST_7 => { self.rst(6) },
-            Instruction::RST_8 => { self.rst(7) },
-            Instruction::EI => { self.ei() },
-            Instruction::DI => { self.di() },
-            Instruction::IN => { self.input() },
-            Instruction::OUT => { self.out() },
-            Instruction::HLT => { self.hlt() },
-            _ => {}
+    fn do_instruction(&mut self, instruction: Instruction) -> usize {
+        return match instruction {
+            Instruction::STC => { self.stc(); 4 },
+            Instruction::CMC => { self.cmc(); 4 },
+            Instruction::INR_B => { self.inr(Operand8::RegB); 5 },
+            Instruction::INR_C => { self.inr(Operand8::RegC); 5 },
+            Instruction::INR_D => { self.inr(Operand8::RegD); 5 },
+            Instruction::INR_E => { self.inr(Operand8::RegE); 5 },
+            Instruction::INR_H => { self.inr(Operand8::RegH); 5 },
+            Instruction::INR_L => { self.inr(Operand8::RegL); 5 },
+            Instruction::INR_M => { self.inr(Operand8::Memory); 10 },
+            Instruction::INR_A => { self.inr(Operand8::RegA); 5 },
+            Instruction::DCR_B => { self.dcr(Operand8::RegB); 5 },
+            Instruction::DCR_C => { self.dcr(Operand8::RegC); 5  },
+            Instruction::DCR_D => { self.dcr(Operand8::RegD); 5 },
+            Instruction::DCR_E => { self.dcr(Operand8::RegE); 5 },
+            Instruction::DCR_H => { self.dcr(Operand8::RegH); 5 },
+            Instruction::DCR_L => { self.dcr(Operand8::RegL); 5 },
+            Instruction::DCR_M => { self.dcr(Operand8::Memory); 10 },
+            Instruction::DCR_A => { self.dcr(Operand8::RegA); 5 },
+            Instruction::CMA => { self.cma(); 4 },
+            Instruction::DAA => { self.daa(); 4 },
+            Instruction::MOV_B_C => { self.mov(Operand8::RegB, Operand8::RegC); 5; 5 },
+            Instruction::MOV_B_D => { self.mov(Operand8::RegB, Operand8::RegD); 5; 5 },
+            Instruction::MOV_B_E => { self.mov(Operand8::RegB, Operand8::RegE); 5; 5 },
+            Instruction::MOV_B_H => { self.mov(Operand8::RegB, Operand8::RegH); 5; 5 },
+            Instruction::MOV_B_L => { self.mov(Operand8::RegB, Operand8::RegL); 5; 5 },
+            Instruction::MOV_B_M => { self.mov(Operand8::RegB, Operand8::Memory); 7 },
+            Instruction::MOV_B_A => { self.mov(Operand8::RegB, Operand8::RegA); 5 },
+            Instruction::MOV_C_B => { self.mov(Operand8::RegC, Operand8::RegB); 5 },
+            Instruction::MOV_C_D => { self.mov(Operand8::RegC, Operand8::RegD); 5 },
+            Instruction::MOV_C_E => { self.mov(Operand8::RegC, Operand8::RegE); 5 },
+            Instruction::MOV_C_H => { self.mov(Operand8::RegC, Operand8::RegH); 5 },
+            Instruction::MOV_C_L => { self.mov(Operand8::RegC, Operand8::RegL); 5 },
+            Instruction::MOV_C_M => { self.mov(Operand8::RegC, Operand8::Memory); 7 },
+            Instruction::MOV_C_A => { self.mov(Operand8::RegC, Operand8::RegA); 5 },
+            Instruction::MOV_D_B => { self.mov(Operand8::RegD, Operand8::RegB); 5 },
+            Instruction::MOV_D_C => { self.mov(Operand8::RegD, Operand8::RegC); 5 },
+            Instruction::MOV_D_E => { self.mov(Operand8::RegD, Operand8::RegE); 5 },
+            Instruction::MOV_D_H => { self.mov(Operand8::RegD, Operand8::RegH); 5 },
+            Instruction::MOV_D_L => { self.mov(Operand8::RegD, Operand8::RegL); 5 },
+            Instruction::MOV_D_M => { self.mov(Operand8::RegD, Operand8::Memory); 7 },
+            Instruction::MOV_D_A => { self.mov(Operand8::RegD, Operand8::RegA); 5 },
+            Instruction::MOV_E_B => { self.mov(Operand8::RegE, Operand8::RegB); 5 },
+            Instruction::MOV_E_C => { self.mov(Operand8::RegE, Operand8::RegC); 5 },
+            Instruction::MOV_E_D => { self.mov(Operand8::RegE, Operand8::RegD); 5 },
+            Instruction::MOV_E_H => { self.mov(Operand8::RegE, Operand8::RegH); 5 },
+            Instruction::MOV_E_L => { self.mov(Operand8::RegE, Operand8::RegL); 5 },
+            Instruction::MOV_E_M => { self.mov(Operand8::RegE, Operand8::Memory); 7 },
+            Instruction::MOV_E_A => { self.mov(Operand8::RegE, Operand8::RegA); 5 },
+            Instruction::MOV_H_B => { self.mov(Operand8::RegH, Operand8::RegB); 5 },
+            Instruction::MOV_H_C => { self.mov(Operand8::RegH, Operand8::RegC); 5 },
+            Instruction::MOV_H_D => { self.mov(Operand8::RegH, Operand8::RegD); 5 },
+            Instruction::MOV_H_E => { self.mov(Operand8::RegE, Operand8::RegE); 5 },
+            Instruction::MOV_H_L => { self.mov(Operand8::RegH, Operand8::RegL); 5 },
+            Instruction::MOV_H_M => { self.mov(Operand8::RegH, Operand8::Memory); 7 },
+            Instruction::MOV_H_A => { self.mov(Operand8::RegH, Operand8::RegA); 5 },
+            Instruction::MOV_L_B => { self.mov(Operand8::RegL, Operand8::RegB); 5 },
+            Instruction::MOV_L_C => { self.mov(Operand8::RegL, Operand8::RegC); 5 },
+            Instruction::MOV_L_D => { self.mov(Operand8::RegL, Operand8::RegD); 5 },
+            Instruction::MOV_L_E => { self.mov(Operand8::RegL, Operand8::RegE); 5 },
+            Instruction::MOV_L_H => { self.mov(Operand8::RegL, Operand8::RegH); 5 },
+            Instruction::MOV_L_M => { self.mov(Operand8::RegL, Operand8::Memory); 7 },
+            Instruction::MOV_L_A => { self.mov(Operand8::RegL, Operand8::RegA); 5 },
+            Instruction::MOV_M_B => { self.mov(Operand8::Memory, Operand8::RegB); 7 },
+            Instruction::MOV_M_C => { self.mov(Operand8::Memory, Operand8::RegC); 7 },
+            Instruction::MOV_M_D => { self.mov(Operand8::Memory, Operand8::RegD); 7 },
+            Instruction::MOV_M_E => { self.mov(Operand8::Memory, Operand8::RegE); 7 },
+            Instruction::MOV_M_H => { self.mov(Operand8::Memory, Operand8::RegH); 7 },
+            Instruction::MOV_M_L => { self.mov(Operand8::Memory, Operand8::RegL); 7 },
+            Instruction::MOV_M_A => { self.mov(Operand8::Memory, Operand8::RegH); 7 },
+            Instruction::MOV_A_B => { self.mov(Operand8::RegA, Operand8::RegB); 5 },
+            Instruction::MOV_A_C => { self.mov(Operand8::RegA, Operand8::RegC); 5 },
+            Instruction::MOV_A_D => { self.mov(Operand8::RegA, Operand8::RegD); 5 },
+            Instruction::MOV_A_E => { self.mov(Operand8::RegA, Operand8::RegE); 5 },
+            Instruction::MOV_A_H => { self.mov(Operand8::RegA, Operand8::RegH); 5 },
+            Instruction::MOV_A_L => { self.mov(Operand8::RegA, Operand8::RegL); 5 },
+            Instruction::MOV_A_M => { self.mov(Operand8::RegA, Operand8::Memory); 7 },
+            Instruction::STAX_B => { self.stax(Operand16::RegPairB); 7 },
+            Instruction::STAX_D => { self.stax(Operand16::RegPairD); 7 },
+            Instruction::LDAX_B => { self.ldax(Operand16::RegPairB); 7 },
+            Instruction::LDAX_D => { self.ldax(Operand16::RegPairD); 7 },
+            Instruction::ADD_B => { self.add(Operand8::RegB); 4 },
+            Instruction::ADD_C => { self.add(Operand8::RegC); 4 },
+            Instruction::ADD_D => { self.add(Operand8::RegD); 4 },
+            Instruction::ADD_E => { self.add(Operand8::RegE); 4 },
+            Instruction::ADD_H => { self.add(Operand8::RegH); 4 },
+            Instruction::ADD_L => { self.add(Operand8::RegL); 4 },
+            Instruction::ADD_M => { self.add(Operand8::Memory); 7 },
+            Instruction::ADD_A => { self.add(Operand8::RegA); 4 },
+            Instruction::ADC_B => { self.adc(Operand8::RegB); 4 },
+            Instruction::ADC_C => { self.adc(Operand8::RegC); 4 },
+            Instruction::ADC_D => { self.adc(Operand8::RegD); 4 },
+            Instruction::ADC_E => { self.adc(Operand8::RegE); 4 },
+            Instruction::ADC_H => { self.adc(Operand8::RegH); 4 },
+            Instruction::ADC_L => { self.adc(Operand8::RegL); 4 },
+            Instruction::ADC_M => { self.adc(Operand8::Memory); 7 },
+            Instruction::ADC_A => { self.adc(Operand8::RegA); 4 },
+            Instruction::SUB_B => { self.sub(Operand8::RegB); 4 },
+            Instruction::SUB_C => { self.sub(Operand8::RegC); 4 },
+            Instruction::SUB_D => { self.sub(Operand8::RegD); 4 },
+            Instruction::SUB_E => { self.sub(Operand8::RegE); 4 },
+            Instruction::SUB_H => { self.sub(Operand8::RegH); 4 },
+            Instruction::SUB_L => { self.sub(Operand8::RegL); 4 },
+            Instruction::SUB_M => { self.sub(Operand8::Memory); 7 },
+            Instruction::SUB_A => { self.sub(Operand8::RegA); 4 },
+            Instruction::SBB_B => { self.sbb(Operand8::RegB); 4 },
+            Instruction::SBB_C => { self.sbb(Operand8::RegC); 4 },
+            Instruction::SBB_D => { self.sbb(Operand8::RegD); 4 },
+            Instruction::SBB_E => { self.sbb(Operand8::RegE); 4 },
+            Instruction::SBB_H => { self.sbb(Operand8::RegH); 4 },
+            Instruction::SBB_L => { self.sbb(Operand8::RegL); 4 },
+            Instruction::SBB_M => { self.sbb(Operand8::Memory); 7 },
+            Instruction::SBB_A => { self.sbb(Operand8::RegA); 4  },
+            Instruction::ANA_B => { self.ana(Operand8::RegB); 4 },
+            Instruction::ANA_C => { self.ana(Operand8::RegC); 4 },
+            Instruction::ANA_D => { self.ana(Operand8::RegD); 4 },
+            Instruction::ANA_E => { self.ana(Operand8::RegE); 4 },
+            Instruction::ANA_H => { self.ana(Operand8::RegH); 4 },
+            Instruction::ANA_L => { self.ana(Operand8::RegL); 4} ,
+            Instruction::ANA_M => { self.ana(Operand8::Memory); 7 },
+            Instruction::ANA_A => { self.ana(Operand8::RegA); 4 },
+            Instruction::XRA_B => { self.xra(Operand8::RegB); 4 },
+            Instruction::XRA_C => { self.xra(Operand8::RegC); 4 },
+            Instruction::XRA_D => { self.xra(Operand8::RegD); 4 },
+            Instruction::XRA_E => { self.xra(Operand8::RegE); 4 },
+            Instruction::XRA_H => { self.xra(Operand8::RegH); 4 },
+            Instruction::XRA_L => { self.xra(Operand8::RegL); 4 },
+            Instruction::XRA_M => { self.xra(Operand8::Memory); 7 },
+            Instruction::XRA_A => { self.xra(Operand8::RegA); 4 },
+            Instruction::ORA_B => { self.ora(Operand8::RegB); 4 },
+            Instruction::ORA_C => { self.ora(Operand8::RegC); 4 },
+            Instruction::ORA_D => { self.ora(Operand8::RegD); 4 },
+            Instruction::ORA_E => { self.ora(Operand8::RegE); 4 },
+            Instruction::ORA_H => { self.ora(Operand8::RegH); 4 },
+            Instruction::ORA_L => { self.ora(Operand8::RegL); 4 },
+            Instruction::ORA_M => { self.ora(Operand8::Memory); 7 },
+            Instruction::ORA_A => { self.ora(Operand8::RegA); 4 },
+            Instruction::CMP_B => { self.cmp(Operand8::RegB); 4 },
+            Instruction::CMP_C => { self.cmp(Operand8::RegC); 4 },
+            Instruction::CMP_D => { self.cmp(Operand8::RegD); 4 },
+            Instruction::CMP_E => { self.cmp(Operand8::RegE); 4 },
+            Instruction::CMP_H => { self.cmp(Operand8::RegH); 4 },
+            Instruction::CMP_L => { self.cmp(Operand8::RegL); 4 },
+            Instruction::CMP_M => { self.cmp(Operand8::Memory); 7 },
+            Instruction::CMP_A => { self.cmp(Operand8::RegA); 4 },
+            Instruction::RLC => { self.rlc(); 4 },
+            Instruction::RRC => { self.rrc(); 4 },
+            Instruction::RAL => { self.ral(); 4 },
+            Instruction::RAR => { self.rar(); 4 },
+            Instruction::PUSH_B => { self.push(Operand16::RegPairB); 11 },
+            Instruction::PUSH_D => { self.push(Operand16::RegPairD); 11 },
+            Instruction::PUSH_H => { self.push(Operand16::RegPairH); 11 },
+            Instruction::PUSH_PSW => { self.push(Operand16::PSW); 11 },
+            Instruction::POP_B => { self.pop(Operand16::RegPairB); 10 },
+            Instruction::POP_D => { self.pop(Operand16::RegPairD); 10 },
+            Instruction::POP_H => { self.pop(Operand16::RegPairH); 10 },
+            Instruction::POP_PSW => { self.pop(Operand16::PSW); 10 },
+            Instruction::DAD_B => { self.dad(Operand16::RegPairB); 10 },
+            Instruction::DAD_D => { self.dad(Operand16::RegPairD); 10 },
+            Instruction::DAD_H => { self.dad(Operand16::RegPairH); 10 },
+            Instruction::DAD_SP => { self.dad(Operand16::SP); 10 },
+            Instruction::INX_B => { self.inx(Operand16::RegPairB); 5 },
+            Instruction::INX_D => { self.inx(Operand16::RegPairD); 5 },
+            Instruction::INX_H => { self.inx(Operand16::RegPairH); 5 },
+            Instruction::INX_SP => { self.inx(Operand16::SP); 5 },
+            Instruction::DCX_B => { self.dcx(Operand16::RegPairB); 5 },
+            Instruction::DCX_D => { self.dcx(Operand16::RegPairD); 5 },
+            Instruction::DCX_H => { self.dcx(Operand16::RegPairH); 5 },
+            Instruction::DCX_SP => { self.dcx(Operand16::SP); 5 },
+            Instruction::XCHG => { self.xchg(); 4 },
+            Instruction::XTHL => { self.xthl(); 18 },
+            Instruction::SPHL => { self.sphl(); 5 },
+            Instruction::LXI_B => { self.load_imm16(); self.lxi(Operand16::RegPairB); 10 },
+            Instruction::LXI_D => { self.load_imm16(); self.lxi(Operand16::RegPairD); 10 },
+            Instruction::LXI_H => { self.load_imm16(); self.lxi(Operand16::RegPairH); 10 },
+            Instruction::LXI_SP => { self.load_imm16(); self.lxi(Operand16::SP); 10 },
+            Instruction::MVI_B => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::RegB); 10 },
+            Instruction::MVI_C => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::RegC); 10 },
+            Instruction::MVI_D => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::RegD); 10 },
+            Instruction::MVI_E => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::RegE); 10 },
+            Instruction::MVI_H => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::RegH); 10 },
+            Instruction::MVI_L => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::RegL); 10 },
+            Instruction::MVI_M => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::Memory); 10 },
+            Instruction::MVI_A => { self.load_imm(); self.mov(Operand8::Immediate, Operand8::RegA); 10 },
+            Instruction::ADI => { self.load_imm(); self.add(Operand8::Immediate); 7 },
+            Instruction::ACI => { self.load_imm(); self.adc(Operand8::Immediate); 7 },
+            Instruction::SUI => { self.load_imm(); self.sub(Operand8::Immediate); 7 },
+            Instruction::SBI => { self.load_imm(); self.sbb(Operand8::Immediate); 7 },
+            Instruction::ANI => { self.load_imm(); self.ana(Operand8::Immediate); 7 },
+            Instruction::XRI => { self.load_imm(); self.xra(Operand8::Immediate); 7 },
+            Instruction::ORI => { self.load_imm(); self.ora(Operand8::Immediate); 7 },
+            Instruction::CPI => { self.load_imm(); self.cmp(Operand8::Immediate); 7 },
+            Instruction::STA => { self.load_imm16(); self.sta(); 13 },
+            Instruction::LDA => { self.load_imm16(); self.lda(); 13 },
+            Instruction::SHLD => { self.load_imm16(); self.shld(); 16 },
+            Instruction::LHLD => { self.load_imm16(); self.lhld(); 16 },
+            Instruction::PCHL => { self.pchl(); 5 },
+            Instruction::JMP => { self.load_imm16(); self.jmp(true); 10 },
+            Instruction::JC => { self.load_imm16(); self.jmp(self.registers.status_carry()); 10 },
+            Instruction::JNC => { self.load_imm16(); self.jmp(!self.registers.status_carry()); 10 },
+            Instruction::JZ => { self.load_imm16(); self.jmp(self.registers.status_zero()); 10 },
+            Instruction::JNZ => { self.load_imm16(); self.jmp(!self.registers.status_zero()); 10 },
+            Instruction::JM => { self.load_imm16(); self.jmp(self.registers.status_sign()); 10 },
+            Instruction::JP => { self.load_imm16(); self.jmp(!self.registers.status_sign()); 10 },
+            Instruction::JPE => { self.load_imm16(); self.jmp(self.registers.status_parity()); 10 },
+            Instruction::JPO => { self.load_imm16(); self.jmp(!self.registers.status_parity()); 10 },
+            Instruction::CALL => { self.load_imm16(); self.call(true); 17 },
+            Instruction::CC => { self.load_imm16(); if self.call(self.registers.status_carry()) {17} else {11} },
+            Instruction::CNC => { self.load_imm16(); if self.call(!self.registers.status_carry()) {17} else {11} },
+            Instruction::CZ => { self.load_imm16(); if self.call(self.registers.status_zero()) {17} else {11} },
+            Instruction::CNZ => { self.load_imm16(); if self.call(!self.registers.status_zero()) {17} else {11} },
+            Instruction::CM => { self.load_imm16(); if self.call(self.registers.status_sign()) {17} else {11} },
+            Instruction::CP => { self.load_imm16(); if self.call(!self.registers.status_sign()) {17} else {11} },
+            Instruction::CPE => { self.load_imm16(); if self.call(self.registers.status_parity()) {17} else {11} },
+            Instruction::CPO => { self.load_imm16(); if self.call(!self.registers.status_parity()) {17} else {11} },
+            Instruction::RET => { self.ret(true); 10 },
+            Instruction::RC => { self.ret(self.registers.status_carry()); 10 },
+            Instruction::RNC => { self.ret(!self.registers.status_carry()); 10 },
+            Instruction::RZ => { self.ret(self.registers.status_zero()); 10 },
+            Instruction::RNZ => { self.ret(!self.registers.status_zero()); 10 },
+            Instruction::RM => { self.ret(self.registers.status_sign()); 10 },
+            Instruction::RP => { self.ret(!self.registers.status_sign()); 10 },
+            Instruction::RPE => { self.ret(self.registers.status_parity()); 10 },
+            Instruction::RPO => { self.ret(!self.registers.status_parity()); 10 },
+            Instruction::RST_1 => { self.rst(0); 11 },
+            Instruction::RST_2 => { self.rst(1); 11 },
+            Instruction::RST_3 => { self.rst(2); 11 },
+            Instruction::RST_4 => { self.rst(3); 11 },
+            Instruction::RST_5 => { self.rst(4); 11 },
+            Instruction::RST_6 => { self.rst(5); 11 },
+            Instruction::RST_7 => { self.rst(6); 11 },
+            Instruction::RST_8 => { self.rst(7); 11 },
+            Instruction::EI => { self.ei(); 4 },
+            Instruction::DI => { self.di(); 4 },
+            Instruction::IN => { self.input(); 10 },
+            Instruction::OUT => { self.out(); 10 },
+            Instruction::HLT => { self.hlt(); 7 },
+            _ => {4}
         }
     }
 
@@ -1539,196 +1538,34 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     }
 
     // Jump
-    fn jmp(&mut self) {
-        self.registers.set_pc(self.registers.pair_w());
-    }
-
-    // Jump If Carry
-    fn jc(&mut self) {
-        if self.registers.status_carry() {
-           self.jmp(); 
-        }
-    }
-
-    // Jump No Carry
-    fn jnc(&mut self) {
-        if !self.registers.status_carry() {
-            self.jmp();
-        }
-    }
-
-    // Jump If Zero
-    fn jz(&mut self) {
-        if self.registers.status_zero() {
-            self.jmp();
-        }
-    }
-
-    // Jump If Not Zero
-    fn jnz(&mut self) {
-        if !self.registers.status_zero() {
-            self.jmp();
-        }
-    }
-
-    // Jump If Minus
-    fn jm(&mut self) {
-        if self.registers.status_sign() {
-            self.jmp();
-        }
-    }
-
-    // Jump If Positive
-    fn jp(&mut self) {
-        if !self.registers.status_sign() {
-            self.jmp();
-        }
-    }
-
-    // Jump If Parity Even
-    fn jpe(&mut self) {
-        if self.registers.status_parity() {
-            self.jmp();
-        }
-    }
-
-    // Jump If Parity Odd
-    fn jpo(&mut self) {
-        if !self.registers.status_parity() {
-            self.jmp();
+    fn jmp(&mut self, condition:  bool) {
+        if condition {
+            self.registers.set_pc(self.registers.pair_w());
         }
     }
 
     // Call
-    fn call(&mut self) {
-        self.push_stack((self.registers.pc() >> 8) as u8);
-        self.push_stack((self.registers.pc() & 0xFF) as u8);
-        self.jmp();
-    }
-
-    // Call If Carry
-    fn cc(&mut self) {
-        if self.registers.status_carry() {
-            self.call();
+    fn call(&mut self, condition: bool) -> bool {
+        if condition {
+            self.push_stack((self.registers.pc() >> 8) as u8);
+            self.push_stack((self.registers.pc() & 0xFF) as u8);
+            self.jmp(true);
+            return true;
         }
+        return false
     }
-
-    // Call If No Carry
-    fn cnc(&mut self) {
-        if !self.registers.status_carry() {
-            self.call();
-        }
-    }
-
-    // Call If Zero
-    fn cz(&mut self) {
-        if self.registers.status_zero() {
-            self.call();
-        }
-    }
-
-    // Call If Not Zero
-    fn cnz(&mut self) {
-        if !self.registers.status_zero() {
-            self.call();
-        }
-    }
-
-    // Call If Minus
-    fn cm(&mut self) {
-        if self.registers.status_sign() {
-            self.call();
-        }
-    }
-
-    // Call If Plus
-    fn cp(&mut self) {
-        if !self.registers.status_sign() {
-            self.call();
-        }
-    }
-
-    // Call If Parity Even
-    fn cpe(&mut self) {
-        if self.registers.status_parity() {
-            self.call();
-        }
-    }
-
-    // Call If Parity Odd
-    fn cpo(&mut self) {
-        if !self.registers.status_parity() {
-            self.call();
-        }
-    }
-
     // Return
-    fn ret(&mut self) {
-        let new_pc:u16 = make_u16(self.pop_stack(),
-                                  self.pop_stack());
-        self.registers.set_pc(new_pc);
-    }
-
-    // Return If Carry
-    fn rc(&mut self) {
-        if self.registers.status_carry() {
-            self.ret();
+    fn ret(&mut self, condition: bool) {
+        if condition {
+            let new_pc:u16 = make_u16(self.pop_stack(),
+                                      self.pop_stack());
+            self.registers.set_pc(new_pc);
         }
     }
-
-    // Return If No Carry
-    fn rnc(&mut self) {
-        if !self.registers.status_carry() {
-            self.ret();
-        }
-    }
-
-    // Return If Zero
-    fn rz(&mut self) {
-        if self.registers.status_zero() {
-            self.ret();
-        }
-    }
-
-    // Return If Not Zero
-    fn rnz(&mut self) {
-        if !self.registers.status_zero() {
-            self.ret();
-        }
-    }
-
-    // Return If Minus
-    fn rm(&mut self) {
-        if self.registers.status_sign() {
-            self.ret();
-        }
-    }
-
-    // Return If Plus
-    fn rp(&mut self) {
-        if !self.registers.status_sign() {
-            self.ret();
-        }
-    }
-
-    // Return If Parity Even
-    fn rpe(&mut self) {
-        if self.registers.status_parity() {
-            self.ret();
-        }
-    }
-
-    // Return If Parity Odd
-    fn rpo(&mut self) {
-        if !self.registers.status_parity() {
-            self.ret();
-        }
-    }
-
     fn rst(&mut self, exp: u8) {
         self.registers.set_w(0);
         self.registers.set_z(exp << 3);
-        self.call();
+        self.call(true);
     }
     // Enable Interrupts
     fn ei(&mut self) {
