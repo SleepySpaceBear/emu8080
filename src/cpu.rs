@@ -793,7 +793,7 @@ enum MachineCycle {
 pub struct Intel8080<'a, const N: usize> {
     registers: Registers,
     memory: &'a mut [u8; N],
-    status_callback: Option<fn(u8)>,
+    interrupt_instruction: Option<Instruction>,
     stopped: bool,
     inte: bool
 }
@@ -803,73 +803,51 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         Self {
             registers: Registers::new(),
             memory,
-            status_callback: None,
+            interrupt_instruction: None,
             stopped: false,
-            inte: false
+            inte: false,
         }
     }
     
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> usize {
         let instruction = self.fetch_instruction();
         self.do_instruction(instruction)
     }
 
     pub fn interrupt(&mut self, instruction: Instruction) {
-        self.do_instruction(instruction)
-    }
-
-    pub fn set_machine_cycle_callback(&mut self, func: Option<fn(u8)>) {
-        self.status_callback = func
-    }
-
-    fn start_machine_cycle(&self, cycle_type: MachineCycle) {
-        if self.status_callback.is_some() { 
-            let status: u8 = match cycle_type {
-                MachineCycle::InstructionFetch => { 0b10100010 },
-                MachineCycle::MemoryRead => { 0b10000010},
-                MachineCycle::MemoryWrite => { 0b00000000 },
-                MachineCycle::StackRead => { 0b10000110 },
-                MachineCycle::StackWrite => { 0b00000100},
-                MachineCycle::InputRead => { 0b01000010 },
-                MachineCycle::OutputWrite => { 0b00010000 },
-                MachineCycle::InterruptAcknowledge => { 0b00100011 },
-                MachineCycle::HaltAcknowledge => { 0b10001010 },
-                MachineCycle::InterruptAcknowledgeWhileHalt => { 0b00101011 }
-            };
-
-            self.status_callback.unwrap()(status);
+        if self.inte {
+            self.interrupt_instruction = Some(instruction)
         }
     }
 
     fn fetch_instruction(&mut self) -> Instruction {
-        self.start_machine_cycle(MachineCycle::InstructionFetch);
-        let instruction: Instruction = Instruction::from(self.memory[self.registers.pc() as usize]);   
-        self.registers.set_pc(self.registers.pc() + 1);
+        let instruction = match self.interrupt_instruction.take() {
+            Some(x) => x,
+            None => { self.registers.set_pc(self.registers.pc() + 1);
+                        Instruction::from(self.memory[self.registers.pc() as usize - 1])
+            }
+        };
+
         return instruction
     }
 
     fn read_memory(&self, addr: u16) -> u8 {
-        self.start_machine_cycle(MachineCycle::MemoryRead);
         self.memory[addr as usize]
     }
 
     fn write_memory(&mut self, addr: u16, val: u8) {
-        self.start_machine_cycle(MachineCycle::MemoryWrite);
         self.memory[addr as usize] = val
     }
 
     fn pop_stack(&mut self) -> u8 {
-        self.start_machine_cycle(MachineCycle::StackRead);
         self.registers.set_sp(self.registers.sp() + 1);
         self.memory[self.registers.sp() as usize - 1]
     }
 
     fn push_stack(&mut self, val: u8) {
-        self.start_machine_cycle(MachineCycle::StackWrite);
         self.registers.set_sp(self.registers.sp() - 1);
         self.memory[self.registers.sp() as usize - 1] = val;
     }
-
 
     fn do_instruction(&mut self, instruction: Instruction) -> usize {
         return match instruction {
@@ -1554,6 +1532,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         }
         return false
     }
+    
     // Return
     fn ret(&mut self, condition: bool) {
         if condition {
@@ -1579,12 +1558,11 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 
     // Input
     fn input(&self) {
-        self.start_machine_cycle(MachineCycle::InputRead);
+    
     }
 
     // Output
     fn out(&self) {
-        self.start_machine_cycle(MachineCycle::OutputWrite);
     }
 
     // Halt
