@@ -789,11 +789,26 @@ enum MachineCycle {
     InterruptAcknowledgeWhileHalt
 }
 
+#[derive(Copy, Clone)]
+pub struct Port {
+    input_callback: fn()->u8,
+    output_callback: fn(u8)
+}
+
+impl Port {
+    pub fn new(input_callback: fn()->u8, output_callback: fn(u8)) -> Self {
+        Self {
+            input_callback,
+            output_callback
+        }
+    }
+}
 
 pub struct Intel8080<'a, const N: usize> {
     registers: Registers,
     memory: &'a mut [u8; N],
     interrupt_instruction: Option<Instruction>,
+    port_callbacks: [Option<Port>; 256],
     stopped: bool,
     inte: bool
 }
@@ -803,12 +818,21 @@ impl<'a, const N: usize> Intel8080<'a, N> {
         Self {
             registers: Registers::new(),
             memory,
+            port_callbacks: [None; 256],
             interrupt_instruction: None,
             stopped: false,
             inte: false,
         }
     }
-    
+
+    pub fn set_port(&mut self, port_index: u8, port: Port) {
+        self.port_callbacks[port_index as usize] = Some(port);
+    }
+
+    pub fn unset_port(&mut self, port_index: u8) {
+        self.port_callbacks[port_index as usize] = None;
+    }
+
     pub fn step(&mut self) -> usize {
         let instruction = self.fetch_instruction();
         self.do_instruction(instruction)
@@ -1084,8 +1108,8 @@ impl<'a, const N: usize> Intel8080<'a, N> {
             Instruction::RST_8 => { self.rst(7); 11 },
             Instruction::EI => { self.ei(); 4 },
             Instruction::DI => { self.di(); 4 },
-            Instruction::IN => { self.input(); 10 },
-            Instruction::OUT => { self.out(); 10 },
+            Instruction::IN => { self.load_imm(); self.input(); 10 },
+            Instruction::OUT => { self.load_imm(); self.out(); 10 },
             Instruction::HLT => { self.hlt(); 7 },
             _ => {4}
         }
@@ -1557,12 +1581,23 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     }
 
     // Input
-    fn input(&self) {
-    
+    fn input(&mut self) {
+        let port = self.registers.z();
+
+        if self.port_callbacks[port as usize].is_some() {
+            let callback = self.port_callbacks[port as usize].unwrap().input_callback;
+            self.registers.set_accumulator(callback());
+        }
     }
 
     // Output
     fn out(&self) {
+        let port = self.registers.z();
+
+        if self.port_callbacks[port as usize].is_some() {
+            let callback = self.port_callbacks[port as usize].unwrap().output_callback;
+            callback(self.registers.accumulator());
+        }
     }
 
     // Halt
