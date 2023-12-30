@@ -3,6 +3,8 @@ use std::usize;
 use crate::registers::Registers as Registers;
 use crate::utils::*;
 
+#[allow(non_camel_case_types)]
+
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
 pub enum Instruction {
