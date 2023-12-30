@@ -1183,7 +1183,7 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     fn set_condition(&mut self, val: u8, carry: bool, aux_carry: bool) {
         self.registers.set_status_zero(val == 0);
         self.registers.set_status_sign(val & 0x80 != 0);
-        self.registers.set_status_aux_carry(parity_even(val));
+        self.registers.set_status_parity(parity_even(val));
         self.registers.set_status_carry(carry);
         self.registers.set_status_aux_carry(aux_carry);
     }
@@ -1615,6 +1615,27 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_adi() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::ADI as u8;
+        memory[1] = 0x42;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x14);
+
+        cpu.step();
+
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(!cpu.registers.status_sign());
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0x56);
+    }
 
     #[test]
     fn test_xthl() {
