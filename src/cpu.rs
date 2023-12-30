@@ -1498,9 +1498,13 @@ impl<'a, const N: usize> Intel8080<'a, N> {
 
     // Exchange Stack
     fn xthl(&mut self) {
-        let temp = self.registers.l();
-        self.registers.set_l(self.memory[self.registers.sp() as usize + 1]);
+        let temp = self.registers.h();
+        self.registers.set_h(self.memory[self.registers.sp() as usize + 1]);
         self.memory[self.registers.sp() as usize + 1] = temp;
+        
+        let temp = self.registers.l();
+        self.registers.set_l(self.memory[self.registers.sp() as usize]);
+        self.memory[self.registers.sp() as usize] = temp;
     }
 
     // Load SP From H and L
@@ -1605,5 +1609,39 @@ impl<'a, const N: usize> Intel8080<'a, N> {
     // Halt
     fn hlt(&mut self) {
         self.stopped = true;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_xthl() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::XTHL as u8;
+        memory[20] = 0xFF;
+        memory[21] = 0xF0;
+        memory[22] = 0x0D;
+        memory[23] = 0xFF;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_sp(21);
+        cpu.registers.set_pc(0);
+
+        cpu.registers.set_h(0x0B);
+        cpu.registers.set_l(0x3C);
+
+        let initial_status = cpu.registers.status();
+        cpu.step();
+
+        assert_eq!(cpu.registers.h(), 0x0D);
+        assert_eq!(cpu.registers.l(), 0xF0);
+        assert_eq!(initial_status, cpu.registers.status());
+
+        assert_eq!(memory[20], 0xFF);
+        assert_eq!(memory[21], 0x3C);
+        assert_eq!(memory[22], 0x0B);
+        assert_eq!(memory[23], 0xFF);
     }
 }
