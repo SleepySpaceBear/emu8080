@@ -1617,6 +1617,106 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_cmp() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::CMP_E as u8;
+        memory[1] = Instruction::CMP_H as u8;
+        memory[2] = Instruction::CMP_B as u8;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x0A);
+        cpu.registers.set_e(0x05);
+
+        cpu.step();
+
+        assert_eq!(cpu.registers.accumulator(), 0x0A);
+        assert!(cpu.registers.status_carry());
+
+
+        cpu.registers.set_accumulator(0x02);
+        cpu.registers.set_h(0x05);
+
+        cpu.step();
+
+        assert_eq!(cpu.registers.accumulator(), 0x02);
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_zero());
+
+
+        cpu.registers.set_accumulator(0x05);
+        cpu.registers.set_b(0x05);
+
+        cpu.step();
+
+        assert_eq!(cpu.registers.accumulator(), 0x05);
+        assert!(cpu.registers.status_carry());
+        assert!(cpu.registers.status_zero());
+    }
+
+    #[test]
+    fn test_rlc() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::RLC as u8;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0b11110010);
+
+        cpu.step();
+
+        assert_eq!(cpu.registers.accumulator(), 0b11100101);
+        assert!(cpu.registers.status_carry());
+    }
+    
+    #[test]
+    fn test_rrc() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::RRC as u8;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0b11110010);
+
+        cpu.step();
+
+        assert_eq!(cpu.registers.accumulator(), 0b01111001);
+        assert!(!cpu.registers.status_carry());
+    }
+
+    #[test]
+    fn test_ral() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::RAL as u8;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0b10110101);
+        cpu.registers.set_status_carry(false);
+
+        cpu.step();
+
+        assert_eq!(cpu.registers.accumulator(), 0b01101010);
+        assert!(cpu.registers.status_carry());
+    }
+    
+    #[test]
+    fn test_rar() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::RAR as u8;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0b01101010);
+        cpu.registers.set_status_carry(true);
+
+        cpu.step();
+
+        assert_eq!(cpu.registers.accumulator(), 0b10110101);
+        assert!(!cpu.registers.status_carry());
+    }
+
+    #[test]
     fn test_adi() {
         let mut memory = [0 as u8; 40];
         memory[0] = Instruction::ADI as u8;
@@ -1635,6 +1735,28 @@ mod tests {
         assert!(!cpu.registers.status_aux_carry());
 
         assert_eq!(cpu.registers.accumulator(), 0x56);
+    }
+
+    #[test]
+    fn test_aci() {
+        let mut memory = [0 as u8; 40];
+        memory[0] = Instruction::ACI as u8;
+        memory[1] = 0x42;
+
+        let mut cpu = Intel8080::new(&mut memory);
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x14);
+        cpu.registers.set_status_carry(true);
+
+        cpu.step();
+
+        assert!(!cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(!cpu.registers.status_sign());
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0x57);
     }
 
     #[test]
