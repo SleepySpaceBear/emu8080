@@ -1,13 +1,14 @@
 mod registers;
 mod cpu;
 mod utils;
+mod memory;
 
 use std::io::{stdin,Read};
 
 fn main() {
-    let mut memory: [u8; 200] = [0;200];
+    let mut memory: memory::Memory<200> = memory::Memory::new();
 
-    let mut cpu = cpu::Intel8080::new(&mut memory);
+    let mut cpu = cpu::Intel8080::new();
 
     let mut byte = [0u8];
     while let Ok(_) = stdin().read(&mut byte) {
