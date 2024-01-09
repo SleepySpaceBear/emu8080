@@ -776,21 +776,6 @@ enum Operand16 {
     SP = 5
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-#[repr(u8)]
-enum MachineCycle {
-    InstructionFetch,
-    MemoryRead,
-    MemoryWrite,
-    StackRead,
-    StackWrite,
-    InputRead,
-    OutputWrite,
-    InterruptAcknowledge,
-    HaltAcknowledge,
-    InterruptAcknowledgeWhileHalt
-}
-
 #[derive(Copy, Clone)]
 pub struct Port {
     input_callback: fn()->u8,
