@@ -889,11 +889,11 @@ impl Intel8080 {
             cycles = self.stc();
         }
         else if instruction as u8 & 0xC7 == 0x04 {
-            let operand = Operand8::from((instruction as u8 & 0x38) >> 3);
+            let operand = (instruction as u8 & 0x38) >> 3;
             cycles = self.inr(operand, memory);
         }
         else if instruction as u8 & 0xC7 == 0x05 {
-            let operand = Operand8::from((instruction as u8 & 0x38) >> 3);
+            let operand = (instruction as u8 & 0x38) >> 3;
             cycles = self.dcr(operand, memory);
         }
         else if instruction == Instruction::CMA {
@@ -903,48 +903,48 @@ impl Intel8080 {
             cycles = self.daa();
         }
         else if instruction as u8 & 0xC0 == 0x40 {
-            let dst = Operand8::from((instruction as u8 & 0x38) >> 3);
-            let src = Operand8::from(instruction as u8 & 0x07);
+            let dst = (instruction as u8 & 0x38) >> 3;
+            let src = instruction as u8 & 0x07;
             cycles = self.mov(dst, src, memory);
         }
         else if instruction as u8 & 0xEF == 0x02 {
-            let dst = if instruction as u8 & 0x10 != 0 {Operand16::RegPairD} else {Operand16::RegPairB};
+            let dst = (instruction as u8 & 0x10) >> 4;
             cycles = self.stax(dst, memory);
         }
         else if instruction as u8 & 0xEF == 0x0A {
-            let dst = if instruction as u8 & 0x10 != 0 {Operand16::RegPairD} else {Operand16::RegPairB};
+            let dst = (instruction as u8 & 0x10) >> 4;
             cycles = self.ldax(dst, memory);
         }
         else if instruction as u8 & 0xF8 == 0x80 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.add(reg, memory);
         }
         else if instruction as u8 & 0xF8 == 0x88 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.adc(reg, memory);
         }
         else if instruction as u8 & 0xF8 == 0x90 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.sub(reg, memory);
         }
         else if instruction as u8 & 0xF8 == 0x98 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.sbb(reg, memory);
         }
         else if instruction as u8 & 0xF8 == 0xA0 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.ana(reg, memory);
         }
         else if instruction as u8 & 0xF8 == 0xA8 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.xra(reg, memory);
         }
         else if instruction as u8 & 0xF8 == 0xB0 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.ora(reg, memory);
         }
         else if instruction as u8 & 0xF8 == 0xB8 {
-            let reg = Operand8::from(instruction as u8 & 0x7);
+            let reg = instruction as u8 & 0x7;
             cycles = self.cmp(reg, memory);
         }
         else if instruction == Instruction::RLC {
@@ -960,26 +960,23 @@ impl Intel8080 {
             cycles = self.rar();
         }
         else if instruction as u8 & 0xCF == 0xC5 {
-            let dst = Operand16::from((instruction as u8 & 0x30) >> 4);
+            let dst = (instruction as u8 & 0x30) >> 4;
             cycles = self.push(dst, memory);
         }
         else if instruction as u8 & 0xCF == 0xC1 {
-            let dst = Operand16::from((instruction as u8 & 0x30) >> 4);
+            let dst = (instruction as u8 & 0x30) >> 4;
             cycles = self.pop(dst, memory);
         }
         else if instruction as u8 & 0xCF == 0x09 {
-            let src = Operand16::from((instruction as u8 & 0x30) >> 4);
-            let src = if src == Operand16::PSW {Operand16::SP} else {src};
+            let src = (instruction as u8 & 0x30) >> 4;
             cycles = self.dad(src);
         }
         else if instruction as u8 & 0xCF == 0x03 {
-            let src = Operand16::from((instruction as u8 & 0x30) >> 4);
-            let src = if src == Operand16::PSW {Operand16::SP} else {src};
+            let src = (instruction as u8 & 0x30) >> 4;
             cycles = self.inx(src);
         }
         else if instruction as u8 & 0xCF == 0x0B {
-            let src = Operand16::from((instruction as u8 & 0x30) >> 4);
-            let src = if src == Operand16::PSW {Operand16::SP} else {src};
+            let src = (instruction as u8 & 0x30) >> 4;
             cycles = self.dcx(src);
         }
         else if instruction == Instruction::XCHG {
@@ -992,37 +989,36 @@ impl Intel8080 {
             cycles = self.sphl();
         }
         else if instruction as u8 & 0xCF == 0x1 {
-            let reg = Operand16::from((instruction as u8 & 0x30) >> 4);
-            let reg = if reg == Operand16::PSW {Operand16::SP} else {reg};
+            let reg = (instruction as u8 & 0x30) >> 4;
             cycles = self.lxi(reg, memory);
         }
         else if instruction as u8 & 0xCF == 0x06 {
-            let reg = Operand8::from((instruction as u8 & 0x38) >> 3);
-            cycles = self.mov(reg, Operand8::Immediate, memory);
+            let reg = (instruction as u8 & 0x38) >> 3;
+            cycles = self.mov(reg, Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::ADI {
-            cycles = self.add(Operand8::Immediate, memory);
+            cycles = self.add(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::ACI {
-            cycles = self.adc(Operand8::Immediate, memory);
+            cycles = self.adc(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::SUI {
-            cycles = self.sub(Operand8::Immediate, memory);
+            cycles = self.sub(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::SBI {
-            cycles = self.sbb(Operand8::Immediate, memory);
+            cycles = self.sbb(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::ANI {
-            cycles = self.ana(Operand8::Immediate, memory);
+            cycles = self.ana(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::XRI {
-            cycles = self.xra(Operand8::Immediate, memory);
+            cycles = self.xra(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::ORI {
-            cycles = self.ora(Operand8::Immediate, memory);
+            cycles = self.ora(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::CPI {
-            cycles = self.cmp(Operand8::Immediate, memory);
+            cycles = self.cmp(Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::STA {
             cycles = self.sta(memory);
@@ -1143,7 +1139,8 @@ impl Intel8080 {
     }
 
     // Increment Register or Memory
-    fn inr(&mut self, reg: Operand8, memory: &mut impl MemoryAccess) -> usize {
+    fn inr(&mut self, reg: u8, memory: &mut impl MemoryAccess) -> usize {
+        let reg = Operand8::from(reg);
         let val = self.get_src(reg, memory);
         let val = val.wrapping_add(1);
         self.write_dst(reg, val, memory);
@@ -1156,10 +1153,12 @@ impl Intel8080 {
     }
 
     // Decrement Register or Memory
-    fn dcr(&mut self, reg: Operand8, memory: &mut impl MemoryAccess) -> usize {
+    fn dcr(&mut self, reg: u8, memory: &mut impl MemoryAccess) -> usize {
         // Note: This is equivalent in Intel8080 to adding 0xFF to the value
         // due to the usage of 2s complement representation. Carry bits will be 
         // set accordingly.
+
+        let reg = Operand8::from(reg);
         let orig_val = self.get_src(reg, memory);
         let new_val = orig_val.wrapping_sub(1);
         self.write_dst(reg, new_val, memory);
@@ -1197,7 +1196,9 @@ impl Intel8080 {
     }
 
     // Move
-    fn mov(&mut self, dst: Operand8, src: Operand8, memory: &mut impl MemoryAccess) -> usize {
+    fn mov(&mut self, dst: u8, src: u8, memory: &mut impl MemoryAccess) -> usize {
+        let dst = Operand8::from(dst);
+        let src = Operand8::from(src);
         let val = self.get_src(src, memory);
         self.write_dst(dst, val, memory);
 
@@ -1208,37 +1209,39 @@ impl Intel8080 {
     }
 
     // Store Accumulator
-    fn stax(&mut self, dst: Operand16, memory: &mut impl MemoryAccess) -> usize {
+    fn stax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> usize {
         match dst {
-            Operand16::RegPairB => {
+            0 => {
                 memory.write(self.registers.pair_b(), self.registers.accumulator());
             },
-            Operand16::RegPairD => {
+            1 => {
                 memory.write(self.registers.pair_d(), self.registers.accumulator());
             },
-            _ => {/* INVALID */}
+            _ => { panic!("Invalid dst passed to STAX: {}!", dst) }
         };
 
         7
     }
 
     // Load Accumulator
-    fn ldax(&mut self, dst: Operand16, memory: &mut impl MemoryAccess) -> usize {
+    fn ldax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> usize {
         match dst {
-            Operand16::RegPairB => {
+            0 => {
                 self.registers.set_accumulator(memory.read(self.registers.pair_b()));
             },
-            Operand16::RegPairD => {
+            1 => {
                 self.registers.set_accumulator(memory.read(self.registers.pair_d()));
             },
-            _ => {/* INVALID */}
+            _ => { panic!("Invalid dst passed to LDAX: {}!", dst) }
         };
 
         7
     }
 
     // ADD Register or Memory to Accumulator
-    fn add(&mut self, src: Operand8, memory: &impl MemoryAccess) -> usize {
+    fn add(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src);
+
         let old_val: u8 = self.registers.accumulator();
         let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory)); 
         
@@ -1255,7 +1258,9 @@ impl Intel8080 {
     }
 
     // ADD Register or Memory to Accumulator With Carry
-    fn adc(&mut self, src: Operand8, memory: &impl MemoryAccess) -> usize {
+    fn adc(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src);
+        
         let old_val: u8 = self.registers.accumulator();
         let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory))
             .wrapping_add(self.registers.status_carry() as u8); 
@@ -1273,7 +1278,9 @@ impl Intel8080 {
     }
 
     // Subtract Register or Memory From Accumulator
-    fn sub(&mut self, src: Operand8, memory: &impl MemoryAccess) -> usize {
+    fn sub(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src);
+
         let old_val = self.registers.accumulator();
         let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
 
@@ -1290,7 +1297,9 @@ impl Intel8080 {
     } 
 
     // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb(&mut self, src: Operand8, memory: &impl MemoryAccess) -> usize {
+    fn sbb(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src); 
+
         let old_val = self.registers.accumulator();
         let new_val = twos_complement(self.get_src(src, memory)
             .wrapping_add(self.registers.status_carry() as u8));
@@ -1309,7 +1318,9 @@ impl Intel8080 {
     }
 
     // Logical and Register or Memory With Accumulator
-    fn ana(&mut self, src: Operand8, memory: &impl MemoryAccess) -> usize {
+    fn ana(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src);
+
         let val: u8 = self.registers.accumulator() & self.get_src(src, memory);
         self.set_condition(val, false, false);
         self.registers.set_accumulator(val);
@@ -1321,7 +1332,9 @@ impl Intel8080 {
     }
 
     // Logical Exclusive-Or Register or Memory with Accumulator
-    fn xra(&mut self, src: Operand8, memory: &impl MemoryAccess) -> usize {
+    fn xra(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src); 
+
         let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
         self.set_condition(val, false, false);
         self.registers.set_accumulator(val);
@@ -1333,7 +1346,9 @@ impl Intel8080 {
     }
 
     // Logical or Register or Memory with Accumulator
-    fn ora(&mut self, src: Operand8, memory: &impl MemoryAccess) -> usize {
+    fn ora(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src);
+
         let val: u8 = self.registers.accumulator() | self.get_src(src, memory);
         self.set_condition(val, false, false);
         self.registers.set_accumulator(val);
@@ -1345,7 +1360,9 @@ impl Intel8080 {
     }
 
     // Compare Register or Memory with Accumulator
-    fn cmp(&mut self, src:Operand8, memory: &impl MemoryAccess) -> usize {
+    fn cmp(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+        let src = Operand8::from(src);
+
         let old_val = self.registers.accumulator();
         let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
 
@@ -1429,21 +1446,21 @@ impl Intel8080 {
     }
 
     // Push Data Onto Stack
-    fn push(&mut self, src: Operand16, memory: &mut impl MemoryAccess) -> usize {
+    fn push(&mut self, src: u8, memory: &mut impl MemoryAccess) -> usize {
         let first_register = match src {
-            Operand16::RegPairB => { self.registers.b() },
-            Operand16::RegPairD => { self.registers.d() },
-            Operand16::RegPairH => { self.registers.h() },
-            Operand16::PSW => { self.registers.status() },
-            _ => { 0 }
+            0 => { self.registers.b() },
+            1 => { self.registers.d() },
+            2 => { self.registers.h() },
+            3 => { self.registers.status() },
+            _ => { panic!("Invalid src passed to PUSH: {}!", src) }
         };
         
         let second_register = match src {
-            Operand16::RegPairB => { self.registers.c() },
-            Operand16::RegPairD => { self.registers.e() },
-            Operand16::RegPairH => { self.registers.l() },
-            Operand16::PSW => { self.registers.accumulator() },
-            _ => { 0 }
+            0 => { self.registers.c() },
+            1 => { self.registers.e() },
+            2 => { self.registers.l() },
+            3 => { self.registers.accumulator() },
+            _ => { unreachable!() }
         };
         
         self.push_stack(first_register, memory);
@@ -1452,34 +1469,42 @@ impl Intel8080 {
     }
 
     // Pop Data Off Stack
-    fn pop(&mut self, dst: Operand16, memory: &impl MemoryAccess) -> usize {
+    fn pop(&mut self, dst: u8, memory: &impl MemoryAccess) -> usize {
         let second_register = self.pop_stack(memory);
         let first_register = self.pop_stack(memory);
 
         match dst {
-            Operand16::RegPairB => {
+            0 => {
                 self.registers.set_b(first_register);
                 self.registers.set_c(second_register);
             },
-            Operand16::RegPairD => {
+            1 => {
                 self.registers.set_d(first_register);
                 self.registers.set_e(second_register);
             },
-            Operand16::RegPairH => {
+            2 => {
                 self.registers.set_h(first_register);
                 self.registers.set_l(second_register);
             },
-            Operand16::PSW => {
+            3 => {
                 self.registers.set_status(first_register);
                 self.registers.set_accumulator(second_register);
             },
-            _ => { /* INVALID */ }
+            _ => { panic!("Invalid dst passed to POP: {}!", dst) }
         };
         10
     }
 
     // Double Add
-    fn dad(&mut self, src: Operand16) -> usize {
+    fn dad(&mut self, src: u8) -> usize {
+        let src = match src {
+            0 => Operand16::RegPairB,
+            1 => Operand16::RegPairD,
+            2 => Operand16::RegPairH,
+            3 => Operand16::SP,
+            _ => { panic!("Invalid src passed to DAD: {}!", src); }
+        };
+
         let val = self.get_src_16(src);
         
         let carry = (val & 0x80) | (self.registers.pair_h() & 0x80) != 0;
@@ -1490,14 +1515,30 @@ impl Intel8080 {
     }
 
     // Increment Register Pair
-    fn inx(&mut self, src: Operand16) -> usize {
+    fn inx(&mut self, src: u8) -> usize {
+        let src = match src {
+            0 => Operand16::RegPairB,
+            1 => Operand16::RegPairD,
+            2 => Operand16::RegPairH,
+            3 => Operand16::SP,
+            _ => { panic!("Invalid src passed to INX: {}!", src); }
+        };
+        
         let val = self.get_src_16(src);
         self.write_dst_16(src, val + 1);
         5
     }
 
     // Decrement Register Pair
-    fn dcx(&mut self, src: Operand16) -> usize {
+    fn dcx(&mut self, src: u8) -> usize {
+        let src = match src {
+            0 => Operand16::RegPairB,
+            1 => Operand16::RegPairD,
+            2 => Operand16::RegPairH,
+            3 => Operand16::SP,
+            _ => { panic!("Invalid src passed to DCX: {}!", src); }
+        };
+        
         let val = self.get_src_16(src);
         self.write_dst_16(src, val - 1);
         5
@@ -1530,7 +1571,15 @@ impl Intel8080 {
     }
 
     // Load Register Pair Immediate
-    fn lxi(&mut self, dst: Operand16, memory: &impl MemoryAccess) -> usize {
+    fn lxi(&mut self, dst: u8, memory: &impl MemoryAccess) -> usize {
+        let dst = match dst {
+            0 => Operand16::RegPairB,
+            1 => Operand16::RegPairD,
+            2 => Operand16::RegPairH,
+            3 => Operand16::SP,
+            _ => { panic!("Invalid dst passed to LXI: {}!", dst); }
+        };
+
         self.load_imm16(memory);
         let val = self.registers.pair_w();
         self.write_dst_16(dst, val);
