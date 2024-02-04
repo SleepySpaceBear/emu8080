@@ -1182,12 +1182,12 @@ impl Intel8080 {
         
         let aux_carry = val & 0xF > 0x9;
         if aux_carry || self.registers.status_aux_carry() {
-            val += 0x6;
+            val = val.wrapping_add(0x6);
         }
 
         let carry = val & 0xF0 > 0x90;
         if carry || self.registers.status_carry() {
-            val += 0x60
+            val = val.wrapping_add(0x60);
         }
 
         self.registers.set_accumulator(val);
@@ -1723,6 +1723,38 @@ impl Intel8080 {
 mod tests {
     use super::*;
     use crate::memory::Memory as Memory;
+
+    #[test]
+    fn test_cma() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::CMA as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0b01010001);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), 0b10101110);
+    }
+
+    #[test]
+    fn test_daa() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::DAA as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x9B);
+        cpu.registers.set_status_carry(false);
+        cpu.registers.set_status_aux_carry(false);
+
+        cpu.step(&mut memory);
+        
+        assert!(cpu.registers.status_carry());
+        assert!(cpu.registers.status_aux_carry());
+        assert_eq!(cpu.registers.accumulator(), 0x01);
+    }
 
     #[test]
     fn test_cmp() {
