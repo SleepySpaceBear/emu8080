@@ -1757,6 +1757,31 @@ mod tests {
     }
 
     #[test]
+    fn test_mov() {
+        let mut memory: Memory<200> = Memory::new();
+        memory.write(0, Instruction::MOV_M_A as u8);
+        memory.write(1, Instruction::MOV_B_M as u8);
+        memory.write(2, Instruction::MOV_C_B as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_pair_h(160);
+        cpu.registers.set_accumulator(0x42);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(memory.read(160u16), cpu.registers.accumulator());
+
+        cpu.step(&mut memory);
+
+        assert_eq!(memory.read(160), cpu.registers.b());
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.b(), cpu.registers.c());
+    }
+
+    #[test]
     fn test_cmp() {
         let mut memory: Memory<40> = Memory::new();
         memory.write(0, Instruction::CMP_E as u8);
