@@ -1782,6 +1782,37 @@ mod tests {
     }
 
     #[test]
+    fn test_inr() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::INR_C as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_c(0x99);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.c(), 0x9A);
+    }
+    
+    #[test]
+    fn test_dcr() {
+        let mut memory: Memory<200> = Memory::new();
+        memory.write(0, Instruction::DCR_M as u8);
+        memory.write(0x50, 0x40);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_h(0x00);
+        cpu.registers.set_l(0x50);
+        
+
+        cpu.step(&mut memory);
+
+        assert_eq!(memory.read(0x50), 0x3F);
+    }
+
+    #[test]
     fn test_cmp() {
         let mut memory: Memory<40> = Memory::new();
         memory.write(0, Instruction::CMP_E as u8);
