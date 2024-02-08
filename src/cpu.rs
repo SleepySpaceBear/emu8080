@@ -822,8 +822,10 @@ impl Port {
 pub struct Intel8080 {
     registers: Registers,
     interrupt_instruction: Option<Instruction>,
-    port_callbacks: [Option<Port>; 256],
+    address_bus: u16,
     stopped: bool,
+    output_ready: bool,
+    awaiting_input: bool,
     inte: bool
 }
 
@@ -831,22 +833,40 @@ impl Intel8080 {
     pub fn new() -> Self {
         Self {
             registers: Registers::new(),
-            port_callbacks: [None; 256],
             interrupt_instruction: None,
+            address_bus: 0,
             stopped: false,
+            output_ready: false,
+            awaiting_input: false,
             inte: false,
         }
     }
-
-    pub fn set_port(&mut self, port_index: u8, port: Port) {
-        self.port_callbacks[port_index as usize] = Some(port);
+    
+    pub fn awaiting_input(&self) -> bool {
+        self.awaiting_input
     }
 
-    pub fn unset_port(&mut self, port_index: u8) {
-        self.port_callbacks[port_index as usize] = None;
+    pub fn write_input(&mut self, data: u8) {
+        if self.awaiting_input {
+            self.registers.set_accumulator(data);
+        }
+    }
+
+    pub fn output_ready(&self) -> bool {
+        self.output_ready
+    }
+
+    pub fn read_output(&self) -> u8 {
+        match self.output_ready {
+            true => self.registers.accumulator(),
+            false => 0
+        }
     }
 
     pub fn step(&mut self, memory: &mut impl MemoryAccess) -> usize {
+        self.awaiting_input = false;
+        self.output_ready = false;
+
         let instruction = self.fetch_instruction(memory);
         self.do_instruction(instruction, memory)
     }
@@ -1691,24 +1711,17 @@ impl Intel8080 {
     // Input
     fn input(&mut self) -> usize {
         let port = self.registers.z();
-
-        if self.port_callbacks[port as usize].is_some() {
-            let callback = self.port_callbacks[port as usize].unwrap().input_callback;
-            self.registers.set_accumulator(callback());
-        }
+        self.awaiting_input = true;
+        self.address_bus = (port as u16) << 8 | (port as u16);
 
         10
     }
 
     // Output
-    fn out(&self) -> usize {
+    fn out(&mut self) -> usize {
         let port = self.registers.z();
-
-        if self.port_callbacks[port as usize].is_some() {
-            let callback = self.port_callbacks[port as usize].unwrap().output_callback;
-            callback(self.registers.accumulator());
-        }
-
+        self.output_ready = true;
+        self.address_bus = (port as u16) << 8 | (port as u16);
         10
     }
 
