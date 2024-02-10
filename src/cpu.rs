@@ -1783,7 +1783,7 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        assert_eq!(memory.read(160u16), cpu.registers.accumulator());
+        assert_eq!(memory.read(160), cpu.registers.accumulator());
 
         cpu.step(&mut memory);
 
