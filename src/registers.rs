@@ -191,7 +191,7 @@ impl Registers {
     }
 
     pub fn status_zero(&self) -> bool {
-        return (self.status & 0x40) != 0; 
+        return (self.status & StatusFlags::ZeroBit as u8) != 0; 
     }
 
     pub fn set_status_zero(&mut self, zero: bool) {

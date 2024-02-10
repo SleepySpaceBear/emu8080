@@ -1085,7 +1085,7 @@ impl Intel8080 {
     fn load_imm16(&mut self, memory: &impl MemoryAccess) {
         let val = self.fetch_instruction(memory) as u8;
         self.registers.set_z(val);
-        
+
         let val = self.fetch_instruction(memory) as u8;
         self.registers.set_w(val);
     }
@@ -1114,7 +1114,7 @@ impl Intel8080 {
             Operand8::RegL => { self.registers.set_l(val) },
             Operand8::Memory => { memory.write(self.registers.pair_h(), val); },
             Operand8::RegA => { self.registers.set_accumulator(val) },
-            Operand8::Immediate => {/* INVALID */} 
+            Operand8::Immediate => { panic!("Can't write to immediate!") } 
         }
     }
 
@@ -1138,12 +1138,10 @@ impl Intel8080 {
         }
     }
 
-    fn set_condition(&mut self, val: u8, carry: bool, aux_carry: bool) {
+    fn set_condition(&mut self, val: u8) {
         self.registers.set_status_zero(val == 0);
         self.registers.set_status_sign(val & 0x80 != 0);
         self.registers.set_status_parity(parity_even(val));
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
     }
 
     // Set Carry
@@ -1164,7 +1162,9 @@ impl Intel8080 {
         let val = self.get_src(reg, memory);
         let val = val.wrapping_add(1);
         self.write_dst(reg, val, memory);
-        self.set_condition(val, val == 0, val % 0x10 == 0);
+        self.set_condition(val);
+        self.registers.set_status_carry(val == 0);
+        self.registers.set_status_aux_carry(val & 0x0F == 0);
 
         if reg == Operand8::Memory {
             return 10
@@ -1180,9 +1180,11 @@ impl Intel8080 {
 
         let reg = Operand8::from(reg);
         let orig_val = self.get_src(reg, memory);
-        let new_val = orig_val.wrapping_sub(1);
+        let new_val = orig_val.wrapping_add(0xFF);
         self.write_dst(reg, new_val, memory);
-        self.set_condition(new_val, new_val != 255, orig_val & 0xF != 0);
+        self.set_condition(new_val);
+        self.registers.set_status_carry(orig_val != 255);
+        self.registers.set_status_aux_carry(orig_val & 0xF != 0);
 
         if reg == Operand8::Memory {
             return 10
@@ -1211,7 +1213,9 @@ impl Intel8080 {
         }
 
         self.registers.set_accumulator(val);
-        self.set_condition(val, carry, aux_carry);
+        self.set_condition(val);
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
         4
     }
 
@@ -1269,7 +1273,9 @@ impl Intel8080 {
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val as u8);
-        self.set_condition(new_val as u8, carry, aux_carry);
+        self.set_condition(new_val as u8);
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
             return 7
@@ -1289,7 +1295,9 @@ impl Intel8080 {
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val, carry, aux_carry);
+        self.set_condition(new_val);
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
             return 7
@@ -1304,11 +1312,13 @@ impl Intel8080 {
         let old_val = self.registers.accumulator();
         let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
 
-        let carry: bool = check_carry(old_val, new_val);
+        let carry: bool = !check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val, carry, aux_carry);
+        self.set_condition(new_val);
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
             return 7
@@ -1325,11 +1335,13 @@ impl Intel8080 {
             .wrapping_add(self.registers.status_carry() as u8));
         let new_val = old_val.wrapping_add(new_val);
 
-        let carry: bool = check_carry(old_val, new_val);
+        let carry: bool = !check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val, carry, aux_carry);
+        self.set_condition(new_val);
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
             return 7
@@ -1342,7 +1354,8 @@ impl Intel8080 {
         let src = Operand8::from(src);
 
         let val: u8 = self.registers.accumulator() & self.get_src(src, memory);
-        self.set_condition(val, false, false);
+        self.set_condition(val);
+        self.registers.set_status_carry(false);
         self.registers.set_accumulator(val);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
@@ -1356,7 +1369,8 @@ impl Intel8080 {
         let src = Operand8::from(src); 
 
         let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
-        self.set_condition(val, false, false);
+        self.set_condition(val);
+        self.registers.set_status_carry(false);
         self.registers.set_accumulator(val);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
@@ -1370,7 +1384,8 @@ impl Intel8080 {
         let src = Operand8::from(src);
 
         let val: u8 = self.registers.accumulator() | self.get_src(src, memory);
-        self.set_condition(val, false, false);
+        self.set_condition(val);
+        self.registers.set_status_carry(false);
         self.registers.set_accumulator(val);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
@@ -1389,7 +1404,9 @@ impl Intel8080 {
         let carry: bool = check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
-        self.set_condition(new_val, carry, aux_carry);
+        self.set_condition(new_val);
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
             return 7
@@ -1826,6 +1843,147 @@ mod tests {
     }
 
     #[test]
+    fn test_stax() {
+        let mut memory: Memory<200> = Memory::new();
+        memory.write(0, Instruction::STAX_B as u8);
+        
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x69);
+        cpu.registers.set_pair_b(56);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), memory.read(56));
+    }
+
+    #[test]
+    fn test_ldax() {
+        let mut memory: Memory<200> = Memory::new();
+        memory.write(0, Instruction::LDAX_D as u8);
+        memory.write(176, 0x35);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x50);
+        cpu.registers.set_pair_d(176);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), memory.read(176));
+    }
+
+    #[test]
+    fn test_sub() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::SUB_A as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x3E);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(0, cpu.registers.accumulator());
+        assert!(!cpu.registers.status_carry());
+        assert!(cpu.registers.status_zero());
+        assert!(cpu.registers.status_parity());
+        assert!(cpu.registers.status_aux_carry());
+        assert!(!cpu.registers.status_sign());
+    }
+
+    #[test]
+    fn test_sbb() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::SBB_L as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x04);
+        cpu.registers.set_l(0x02);
+        cpu.registers.set_status_carry(true);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), 0x1);
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_zero());
+        assert!(!cpu.registers.status_parity());
+        assert!(cpu.registers.status_aux_carry());
+        assert!(!cpu.registers.status_sign());
+    }
+
+    #[test]
+    fn test_ana() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::ANA_C as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0xFC);
+        cpu.registers.set_c(0x0F);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), 0x0C);
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_sign());
+    }
+
+    #[test]
+    fn test_xra() {
+        let mut memory: Memory<2> = Memory::new();
+        memory.write(0, Instruction::XRA_A as u8);
+        memory.write(1, Instruction::XRA_B as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0xFF);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), 0);
+        assert!(!cpu.registers.status_carry());
+        assert!(cpu.registers.status_zero());
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_aux_carry());
+        assert!(!cpu.registers.status_sign());
+
+        cpu.registers.set_accumulator(0xFF);
+        cpu.registers.set_b(0x55);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), 0xAA);
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_aux_carry());
+        assert!(cpu.registers.status_sign());
+    }
+
+    #[test]
+    fn test_ora() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::ORA_C as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x33);
+        cpu.registers.set_c(0x0F);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), 0x3F);
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_sign());
+    }
+
+    #[test]
     fn test_cmp() {
         let mut memory: Memory<40> = Memory::new();
         memory.write(0, Instruction::CMP_E as u8);
@@ -1995,5 +2153,68 @@ mod tests {
         assert_eq!(memory.read(21), 0x3C);
         assert_eq!(memory.read(22), 0x0B);
         assert_eq!(memory.read(23), 0xFF);
+    }
+
+    #[test]
+    fn test_pchl() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::PCHL as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_h(0x41);
+        cpu.registers.set_l(0x3E);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.pc(), 0x413E);
+    }
+
+    #[test]
+    fn test_jmp() {
+        let mut memory: Memory<20> = Memory::new();
+        memory.write(10, Instruction::JMP as u8);
+        memory.write(11, 0x54);
+        memory.write(12, 0x38);
+        memory.write(13, 0x03);
+        memory.write(14, 0x04);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(10);
+        // cpu.registers.set_z(0x23);
+        // cpu.registers.set_w(0x22);
+
+        cpu.step(&mut memory);
+
+        // assert_eq!(cpu.registers.z(), 0x54);
+        // assert_eq!(cpu.registers.w(), 0x38);
+        // assert_eq!(cpu.registers.pair_w(), 0x3854);
+        assert_eq!(cpu.registers.pc(), 0x3854);
+    }
+
+    #[test]
+    fn test_call() {
+
+    }
+
+    #[test]
+    fn test_ret() {
+
+    }
+
+    #[test] 
+    fn test_rst() {
+
+    }
+
+    #[test]
+    fn test_input() {
+
+
+    }
+
+    #[test]
+    fn test_output() {
+
     }
 }
