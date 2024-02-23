@@ -896,7 +896,7 @@ impl Intel8080 {
 
     fn push_stack(&mut self, val: u8, memory: &mut impl MemoryAccess) {
         self.registers.set_sp(self.registers.sp() - 1);
-        memory.write(self.registers.sp() - 1, val);
+        memory.write(self.registers.sp() + 1, val);
     }
 
     fn do_instruction(&mut self, instruction: Instruction, memory: &mut impl MemoryAccess) -> usize {
@@ -2196,7 +2196,29 @@ mod tests {
     #[test]
     fn test_call() {
         let mut memory: Memory<20> = Memory::new();
+        memory.write(0, Instruction::CALL as u8);
+        memory.write(1, 5); // lo addr
+        memory.write(2, 0); // hi addr 
+        
+        memory.write(7, 0xFF);
+        memory.write(8, 0xFF);
+        memory.write(9, 0xFF);
+        memory.write(10, 0xFF);
+        memory.write(11, 0xFF);
 
+        let mut cpu = Intel8080::new();
+
+        cpu.registers.set_pc(0);
+        cpu.registers.set_sp(10);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.pc(), 0x05);
+        assert_eq!(memory.read( 7), 0xFF);
+        assert_eq!(memory.read( 8), 0xFF);
+        assert_eq!(memory.read( 9), 0x03);
+        assert_eq!(memory.read(10), 0x00);
+        assert_eq!(memory.read(11), 0xFF);
     }
 
     #[test]
