@@ -2185,9 +2185,6 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        // assert_eq!(cpu.registers.z(), 0x54);
-        // assert_eq!(cpu.registers.w(), 0x38);
-        // assert_eq!(cpu.registers.pair_w(), 0x3854);
         assert_eq!(cpu.registers.pc(), 0x0102);
     }
 
