@@ -1680,6 +1680,9 @@ impl Intel8080 {
         if self.check_condition(condition) {
             self.registers.set_pc(self.registers.pair_w());
         }
+        else {
+            self.registers.set_pc(0x69);
+        }
 
         return 10
     }
@@ -2174,22 +2177,18 @@ mod tests {
     fn test_jmp() {
         let mut memory: Memory<20> = Memory::new();
         memory.write(10, Instruction::JMP as u8);
-        memory.write(11, 0x54);
-        memory.write(12, 0x38);
-        memory.write(13, 0x03);
-        memory.write(14, 0x04);
+        memory.write(11, 0x02); // lo addr
+        memory.write(12, 0x01); // hi addr
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(10);
-        // cpu.registers.set_z(0x23);
-        // cpu.registers.set_w(0x22);
 
         cpu.step(&mut memory);
 
         // assert_eq!(cpu.registers.z(), 0x54);
         // assert_eq!(cpu.registers.w(), 0x38);
         // assert_eq!(cpu.registers.pair_w(), 0x3854);
-        assert_eq!(cpu.registers.pc(), 0x3854);
+        assert_eq!(cpu.registers.pc(), 0x0102);
     }
 
     #[test]
