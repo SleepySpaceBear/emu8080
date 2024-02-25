@@ -1072,7 +1072,10 @@ impl Intel8080 {
         }
         else if instruction as u8 & 0xC7 == 0xC0 {
             cycles = self.ret((instruction as u8 & 0x38) >> 3, memory);
-        } 
+        }
+        else if instruction as u8 & 0xC7 == 0xC7 {
+            cycles = self.rst((instruction as u8 & 0x38) >> 3, memory);
+        }
         
         cycles
     }
@@ -2214,6 +2217,7 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.pc(), 0x05);
+        assert_eq!(cpu.registers.sp(), 0x08);
         assert_eq!(memory.read( 7), 0xFF);
         assert_eq!(memory.read( 8), 0xFF);
         assert_eq!(memory.read( 9), 0x03);
@@ -2223,17 +2227,41 @@ mod tests {
 
     #[test]
     fn test_ret() {
+        let mut memory: Memory<20> = Memory::new();
+        memory.write( 0, Instruction::RET as u8);
+        memory.write( 9, 0x06);
+        memory.write(10, 0x00);
 
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0x00);
+        cpu.registers.set_sp(0x08);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.pc(), 0x06);
+        assert_eq!(cpu.registers.sp(), 0x0A);
     }
 
     #[test] 
     fn test_rst() {
+        let mut memory: Memory<100> = Memory::new();
+        memory.write(0, Instruction::RST_2 as u8);
 
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0x00);
+        cpu.registers.set_sp(0x10);
+
+        let cycles = cpu.step(&mut memory);
+        
+        assert_eq!(cycles, 11);
+        assert_eq!(cpu.registers.sp(), 0x0E);
+        assert_eq!(cpu.registers.pc(), 0x08);
+        assert_eq!(memory.read(0x0F), 0x01);
+        assert_eq!(memory.read(0x10), 0x00);
     }
 
     #[test]
     fn test_input() {
-
 
     }
 
