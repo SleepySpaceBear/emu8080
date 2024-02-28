@@ -2130,6 +2130,26 @@ mod tests {
     }
 
     #[test]
+    fn test_xchg() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::XCHG as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_d(0x33);
+        cpu.registers.set_e(0x55);
+        cpu.registers.set_h(0x00);
+        cpu.registers.set_l(0xFF);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.d(), 0x00);
+        assert_eq!(cpu.registers.e(), 0xFF);
+        assert_eq!(cpu.registers.h(), 0x33);
+        assert_eq!(cpu.registers.l(), 0x55);
+    }
+
+    #[test]
     fn test_xthl() {
         let mut memory: Memory<40> = Memory::new();
         memory.write(0, Instruction::XTHL as u8);
