@@ -2179,6 +2179,21 @@ mod tests {
     }
 
     #[test]
+    fn test_sphl() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::SPHL as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_h(0x50);
+        cpu.registers.set_l(0x6C);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.sp(), 0x506C)
+    }
+
+    #[test]
     fn test_dad() {
         let mut memory: Memory<1> = Memory::new();
         memory.write(0, Instruction::DAD_B as u8);
