@@ -1652,7 +1652,7 @@ impl Intel8080 {
     fn lhld(&mut self, memory: &mut impl MemoryAccess) -> usize {
         self.load_imm16(memory);
         self.registers.set_l(memory.read(self.registers.pair_w()));
-        self.registers.set_h(memory.read(self.registers.pair_w()));
+        self.registers.set_h(memory.read(self.registers.pair_w() + 1));
         15
     }
 
@@ -2191,6 +2191,62 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.sp(), 0x506C)
+    }
+
+    #[test]
+    fn test_sta_lda() {
+        let mut memory: Memory<500> = Memory::new();
+        memory.write(0, Instruction::STA as u8);
+        memory.write(1, 0x24); // lo addr
+        memory.write(2, 0x01); // hi addr
+        memory.write(3, Instruction::LDA as u8);
+        memory.write(4, 0x56); // lo addr
+        memory.write(5, 0x01); // hi addr
+        memory.write(0x0156, 0x72);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x34);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(memory.read(0x0124), 0x34);
+        assert_eq!(cpu.registers.pc(), 0x3);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.accumulator(), 0x72);
+        assert_eq!(cpu.registers.pc(), 0x6);
+    }
+
+    #[test]
+    fn test_shld_lhld() {
+        let mut memory: Memory<650> = Memory::new();
+        memory.write(0, Instruction::SHLD as u8);
+        memory.write(1, 0x0A); // lo addr
+        memory.write(2, 0x01); // hi addr
+        memory.write(3, Instruction::LHLD as u8);
+        memory.write(4, 0x5B); // lo addr
+        memory.write(5, 0x02); // hi addr
+        memory.write(0x025B, 0xFF);
+        memory.write(0x025C, 0x03);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_h(0xAE);
+        cpu.registers.set_l(0x29);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(memory.read(0x010A), 0x29);
+        assert_eq!(memory.read(0x010B), 0xAE);
+        assert_eq!(cpu.registers.pc(), 0x3);
+
+        cpu.step(&mut memory);
+        assert_eq!(cpu.registers.h(), 0x03);
+        assert_eq!(cpu.registers.l(), 0xFF);
+        assert_eq!(cpu.registers.pc(), 0x6);
+
     }
 
     #[test]
