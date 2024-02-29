@@ -804,21 +804,6 @@ impl From<u8> for Operand16 {
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct Port {
-    input_callback: fn()->u8,
-    output_callback: fn(u8)
-}
-
-impl Port {
-    pub fn new(input_callback: fn()->u8, output_callback: fn(u8)) -> Self {
-        Self {
-            input_callback,
-            output_callback
-        }
-    }
-}
-
 pub struct Intel8080 {
     registers: Registers,
     interrupt_instruction: Option<Instruction>,
