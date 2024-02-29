@@ -822,7 +822,7 @@ impl Port {
 pub struct Intel8080 {
     registers: Registers,
     interrupt_instruction: Option<Instruction>,
-    address_bus: u16,
+    io_port: u8,
     stopped: bool,
     output_ready: bool,
     awaiting_input: bool,
@@ -834,7 +834,7 @@ impl Intel8080 {
         Self {
             registers: Registers::new(),
             interrupt_instruction: None,
-            address_bus: 0,
+            io_port: 0,
             stopped: false,
             output_ready: false,
             awaiting_input: false,
@@ -842,6 +842,10 @@ impl Intel8080 {
         }
     }
     
+    pub fn active_io_port(&self) -> u8 {
+        self.io_port
+    }
+
     pub fn awaiting_input(&self) -> bool {
         self.awaiting_input
     }
@@ -1740,18 +1744,16 @@ impl Intel8080 {
 
     // Input
     fn input(&mut self) -> usize {
-        let port = self.registers.z();
+        self.io_port = self.registers.z();
         self.awaiting_input = true;
-        self.address_bus = (port as u16) << 8 | (port as u16);
 
         10
     }
 
     // Output
     fn out(&mut self) -> usize {
-        let port = self.registers.z();
+        self.io_port = self.registers.z();
         self.output_ready = true;
-        self.address_bus = (port as u16) << 8 | (port as u16);
         10
     }
 
