@@ -888,17 +888,6 @@ impl Intel8080 {
         return instruction
     }
 
-
-    fn pop_stack(&mut self, memory: &impl MemoryAccess) -> u8 {
-        self.registers.set_sp(self.registers.sp() + 1);
-        memory.read(self.registers.sp() - 1)
-    }
-
-    fn push_stack(&mut self, val: u8, memory: &mut impl MemoryAccess) {
-        self.registers.set_sp(self.registers.sp() - 1);
-        memory.write(self.registers.sp() + 1, val);
-    }
-
     fn do_instruction(&mut self, instruction: Instruction, memory: &mut impl MemoryAccess) -> usize {
         let mut cycles = 4;
 
@@ -1502,16 +1491,20 @@ impl Intel8080 {
             3 => { self.registers.accumulator() },
             _ => { unreachable!() }
         };
-        
-        self.push_stack(first_register, memory);
-        self.push_stack(second_register, memory);
+
+        memory.write(self.registers.sp() - 1, first_register);
+        memory.write(self.registers.sp() - 2, second_register);
+        self.registers.set_sp(self.registers.sp() - 2);
+
         11
     }
 
     // Pop Data Off Stack
     fn pop(&mut self, dst: u8, memory: &impl MemoryAccess) -> usize {
-        let second_register = self.pop_stack(memory);
-        let first_register = self.pop_stack(memory);
+        let second_register = memory.read(self.registers.sp());
+        let first_register = memory.read(self.registers.sp() + 1);
+
+        self.registers.set_sp(self.registers.sp() + 2);
 
         match dst {
             0 => {
@@ -1692,9 +1685,15 @@ impl Intel8080 {
         self.load_imm16(memory);
 
         if self.check_condition(condition) {
-            self.push_stack((self.registers.pc() >> 8) as u8, memory);
-            self.push_stack((self.registers.pc() & 0xFF) as u8, memory);
+            let hi_addr = (self.registers.pc() >> 8) as u8;
+            let lo_addr = (self.registers.pc() & 0xFF) as u8;
+            
+            memory.write(self.registers.sp(), lo_addr);
+            memory.write(self.registers.sp() - 1, hi_addr);
+            
             self.registers.set_pc(self.registers.pair_w());
+            
+            self.registers.set_sp(self.registers.sp() - 2);
             return 17;
         }
         return 11
@@ -1703,16 +1702,27 @@ impl Intel8080 {
     // Return
     fn ret(&mut self, condition: u8, memory: &mut impl MemoryAccess) -> usize {
         if true {
-            let new_pc:u16 = make_u16(self.pop_stack(memory),
-                                      self.pop_stack(memory));
+            let hi_addr = memory.read(self.registers.sp() + 1);
+            let lo_addr = memory.read(self.registers.sp() + 2);
+            
+            self.registers.set_sp(self.registers.sp() + 2);
+            
+            let new_pc: u16 = make_u16(hi_addr, lo_addr);
             self.registers.set_pc(new_pc);
+            
             return if condition > 7 {10} else {11};
         };
         5
     }
     fn rst(&mut self, exp: u8, memory: &mut impl MemoryAccess) -> usize {
-        self.push_stack((self.registers.pc() >> 8) as u8, memory);
-        self.push_stack((self.registers.pc() & 0xFF) as u8, memory);
+        let hi_addr = (self.registers.pc() >> 8) as u8;
+        let lo_addr = (self.registers.pc() & 0xFF) as u8;
+        
+        memory.write(self.registers.sp(), lo_addr);
+        memory.write(self.registers.sp() - 1, hi_addr);
+        
+        self.registers.set_sp(self.registers.sp() - 2);
+        
         self.registers.set_pc((exp as u16) << 3);
         11
     }
@@ -2246,7 +2256,6 @@ mod tests {
         assert_eq!(cpu.registers.h(), 0x03);
         assert_eq!(cpu.registers.l(), 0xFF);
         assert_eq!(cpu.registers.pc(), 0x6);
-
     }
 
     #[test]
@@ -2264,6 +2273,30 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.pair_h(), 0xD51A);
+    }
+
+    #[test]
+    fn test_push_pop() {
+        let mut memory: Memory<100> = Memory::new();
+        memory.write(0, Instruction::PUSH_D as u8);
+        memory.write(1, Instruction::POP_H as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_d(0xBF);
+        cpu.registers.set_e(0x9D);
+        cpu.registers.set_sp(86);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.sp(), 84);
+        assert_eq!(memory.read(85), 0xBF);
+        assert_eq!(memory.read(84), 0x9D);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.sp(), 86);
+        assert_eq!(cpu.registers.l(), 0x9D);
+        assert_eq!(cpu.registers.h(), 0xBF);
     }
 
     #[test]
@@ -2328,8 +2361,8 @@ mod tests {
         assert_eq!(cpu.registers.sp(), 0x08);
         assert_eq!(memory.read( 7), 0xFF);
         assert_eq!(memory.read( 8), 0xFF);
-        assert_eq!(memory.read( 9), 0x03);
-        assert_eq!(memory.read(10), 0x00);
+        assert_eq!(memory.read( 9), 0x00);
+        assert_eq!(memory.read(10), 0x03);
         assert_eq!(memory.read(11), 0xFF);
     }
 
@@ -2337,8 +2370,8 @@ mod tests {
     fn test_ret() {
         let mut memory: Memory<20> = Memory::new();
         memory.write( 0, Instruction::RET as u8);
-        memory.write( 9, 0x06);
-        memory.write(10, 0x00);
+        memory.write( 9, 0x00);
+        memory.write(10, 0x06);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0x00);
@@ -2364,8 +2397,8 @@ mod tests {
         assert_eq!(cycles, 11);
         assert_eq!(cpu.registers.sp(), 0x0E);
         assert_eq!(cpu.registers.pc(), 0x08);
-        assert_eq!(memory.read(0x0F), 0x01);
-        assert_eq!(memory.read(0x10), 0x00);
+        assert_eq!(memory.read(0x0F), 0x00);
+        assert_eq!(memory.read(0x10), 0x01);
     }
 
     #[test]
