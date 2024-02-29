@@ -2276,6 +2276,36 @@ mod tests {
     }
 
     #[test]
+    fn test_dcx() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::DCX_H as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_h(0x98);
+        cpu.registers.set_l(0x00);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.h(), 0x97);
+        assert_eq!(cpu.registers.l(), 0xFF);
+    }
+
+    #[test]
+    fn test_inx() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write(0, Instruction::INX_D as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_d(0x38);
+        cpu.registers.set_e(0xFF);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.d(), 0x39);
+        assert_eq!(cpu.registers.e(), 0x00);
+    }
+
+    #[test]
     fn test_push_pop() {
         let mut memory: Memory<100> = Memory::new();
         memory.write(0, Instruction::PUSH_D as u8);
