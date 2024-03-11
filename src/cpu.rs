@@ -1393,7 +1393,7 @@ impl Intel8080 {
         let old_val = self.registers.accumulator();
         let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
 
-        let carry: bool = check_carry(old_val, new_val);
+        let carry: bool = !check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.set_condition(new_val);
@@ -2011,7 +2011,7 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.accumulator(), 0x0A);
-        assert!(cpu.registers.status_carry());
+        assert!(!cpu.registers.status_carry());
 
 
         cpu.registers.set_accumulator(0x02);
@@ -2020,7 +2020,7 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.accumulator(), 0x02);
-        assert!(!cpu.registers.status_carry());
+        assert!(cpu.registers.status_carry());
         assert!(!cpu.registers.status_zero());
 
 
@@ -2030,7 +2030,7 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.accumulator(), 0x05);
-        assert!(cpu.registers.status_carry());
+        assert!(!cpu.registers.status_carry());
         assert!(cpu.registers.status_zero());
     }
 
@@ -2096,28 +2096,6 @@ mod tests {
         assert!(!cpu.registers.status_carry());
     }
 
-
-    #[test]
-    fn test_adi() {
-        let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::ADI as u8);
-        memory.write(1, 0x42);
-
-        let mut cpu = Intel8080::new();
-        cpu.registers.set_pc(0);
-        cpu.registers.set_accumulator(0x14);
-
-        cpu.step(&mut memory);
-
-        assert!(cpu.registers.status_parity());
-        assert!(!cpu.registers.status_zero());
-        assert!(!cpu.registers.status_sign());
-        assert!(!cpu.registers.status_carry());
-        assert!(!cpu.registers.status_aux_carry());
-
-        assert_eq!(cpu.registers.accumulator(), 0x56);
-    }
-
     #[test]
     fn test_mvi() {
         let mut memory: Memory<600> = Memory::new();
@@ -2147,8 +2125,29 @@ mod tests {
     }
 
     #[test]
-    fn test_aci() {
+    fn test_adi() {
         let mut memory: Memory<40> = Memory::new();
+        memory.write(0, Instruction::ADI as u8);
+        memory.write(1, 0x42);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x14);
+
+        cpu.step(&mut memory);
+
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(!cpu.registers.status_sign());
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0x56);
+    }
+
+    #[test]
+    fn test_aci() {
+        let mut memory: Memory<2> = Memory::new();
         memory.write(0, Instruction::ACI as u8);
         memory.write(1, 0x42);
 
@@ -2166,6 +2165,153 @@ mod tests {
         assert!(!cpu.registers.status_aux_carry());
 
         assert_eq!(cpu.registers.accumulator(), 0x57);
+    }
+
+    #[test]
+    fn test_sui() {
+        let mut memory: Memory<2> = Memory::new();
+        memory.write(0, Instruction::SUI as u8);
+        memory.write(1, 0x01);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x00);
+
+        cpu.step(&mut memory);
+
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_sign());
+        assert!(cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0xFF);
+    }
+
+    #[test]
+    fn test_sbi() {
+        let mut memory: Memory<4> = Memory::new();
+        memory.write(0, Instruction::SBI as u8);
+        memory.write(1, 0x01);
+        
+        memory.write(2, Instruction::SBI as u8);
+        memory.write(3, 0x01);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x00);
+        cpu.registers.set_status_carry(false);
+        
+        cpu.step(&mut memory);
+        
+        assert_eq!(cpu.registers.accumulator(), 0xFF);
+        assert_eq!(cpu.registers.pc(), 0x2);
+        
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_sign());
+        assert!(cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        cpu.registers.set_accumulator(0x00);
+        cpu.step(&mut memory);
+        
+        assert_eq!(cpu.registers.accumulator(), 0xFE);
+        assert_eq!(cpu.registers.pc(), 0x4);
+        
+        assert!(!cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_sign());
+        assert!(cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+    }
+
+    #[test]
+    fn test_ani() {
+        let mut memory: Memory<2> = Memory::new();
+        memory.write(0, Instruction::ANI as u8);
+        memory.write(1, 0x0F);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x3A);
+
+        cpu.step(&mut memory);
+
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(!cpu.registers.status_sign());
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0x0A);
+        assert_eq!(cpu.registers.pc(), 0x02);
+    }
+
+    #[test]
+    fn test_xri() {
+        let mut memory: Memory<2> = Memory::new();
+        memory.write(0, Instruction::XRI as u8);
+        memory.write(1, 0x81);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x3B);
+
+        cpu.step(&mut memory);
+
+        assert!(!cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_sign());
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0xBA);
+        assert_eq!(cpu.registers.pc(), 0x02);
+    }
+
+    #[test]
+    fn test_ori() {
+        let mut memory: Memory<2> = Memory::new();
+        memory.write(0, Instruction::ORI as u8);
+        memory.write(1, 0x0F);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0xB5);
+
+        cpu.step(&mut memory);
+
+        assert!(!cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(cpu.registers.status_sign());
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0xBF);
+        assert_eq!(cpu.registers.pc(), 0x02);
+    }
+
+    #[test]
+    fn test_cpi() {
+        let mut memory: Memory<2> = Memory::new();
+        memory.write(0, Instruction::CPI as u8);
+        memory.write(1, 0x40);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_pc(0);
+        cpu.registers.set_accumulator(0x4A);
+
+        cpu.step(&mut memory);
+
+        assert!(cpu.registers.status_parity());
+        assert!(!cpu.registers.status_zero());
+        assert!(!cpu.registers.status_sign());
+        assert!(!cpu.registers.status_carry());
+        assert!(!cpu.registers.status_aux_carry());
+
+        assert_eq!(cpu.registers.accumulator(), 0x4A);
+        assert_eq!(cpu.registers.pc(), 0x02);
     }
 
     #[test]
