@@ -1001,7 +1001,7 @@ impl Intel8080 {
             let reg = (instruction as u8 & 0x30) >> 4;
             cycles = self.lxi(reg, memory);
         }
-        else if instruction as u8 & 0xCF == 0x06 {
+        else if instruction as u8 & 0xC7 == 0x06 {
             let reg = (instruction as u8 & 0x38) >> 3;
             cycles = self.mov(reg, Operand8::Immediate as u8, memory);
         }
@@ -2096,6 +2096,7 @@ mod tests {
         assert!(!cpu.registers.status_carry());
     }
 
+
     #[test]
     fn test_adi() {
         let mut memory: Memory<40> = Memory::new();
@@ -2115,6 +2116,34 @@ mod tests {
         assert!(!cpu.registers.status_aux_carry());
 
         assert_eq!(cpu.registers.accumulator(), 0x56);
+    }
+
+    #[test]
+    fn test_mvi() {
+        let mut memory: Memory<600> = Memory::new();
+        memory.write(0, Instruction::MVI_H as u8);
+        memory.write(1, 0x01);
+        memory.write(2, Instruction::MVI_L as u8);
+        memory.write(3, 0xF4);
+        memory.write(4, Instruction::MVI_M as u8);
+        memory.write(5, 0xFF);
+
+        let mut cpu = Intel8080::new();
+        
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.pc(), 0x02);
+        assert_eq!(cpu.registers.h(), 0x01);
+
+        cpu.step(&mut memory);
+        
+        assert_eq!(cpu.registers.pc(), 0x04);
+        assert_eq!(cpu.registers.l(), 0xF4);
+
+        cpu.step(&mut memory);
+
+        assert_eq!(cpu.registers.pc(), 0x06);
+        assert_eq!(memory.read(0x01F4), 0xFF);
     }
 
     #[test]
@@ -2438,6 +2467,11 @@ mod tests {
 
     #[test]
     fn test_output() {
+
+    }
+
+    #[test]
+    fn test_interrupts() {
 
     }
 }
