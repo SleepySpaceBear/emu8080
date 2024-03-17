@@ -804,25 +804,10 @@ impl From<u8> for Operand16 {
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct Port {
-    input_callback: fn()->u8,
-    output_callback: fn(u8)
-}
-
-impl Port {
-    pub fn new(input_callback: fn()->u8, output_callback: fn(u8)) -> Self {
-        Self {
-            input_callback,
-            output_callback
-        }
-    }
-}
-
 pub struct Intel8080 {
     registers: Registers,
     interrupt_instruction: Option<Instruction>,
-    address_bus: u16,
+    io_port: u8,
     stopped: bool,
     output_ready: bool,
     awaiting_input: bool,
@@ -834,7 +819,7 @@ impl Intel8080 {
         Self {
             registers: Registers::new(),
             interrupt_instruction: None,
-            address_bus: 0,
+            io_port: 0,
             stopped: false,
             output_ready: false,
             awaiting_input: false,
@@ -842,6 +827,10 @@ impl Intel8080 {
         }
     }
     
+    pub fn active_io_port(&self) -> u8 {
+        self.io_port
+    }
+
     pub fn awaiting_input(&self) -> bool {
         self.awaiting_input
     }
@@ -1064,6 +1053,18 @@ impl Intel8080 {
         }
         else if instruction as u8 & 0xC7 == 0xC7 {
             cycles = self.rst((instruction as u8 & 0x38) >> 3, memory);
+        }
+        else if instruction == Instruction::IN {
+            cycles = self.input(memory)
+        }
+        else if instruction == Instruction::OUT {
+            cycles = self.output(memory)
+        }
+        else if instruction == Instruction::EI {
+            cycles = self.ei()
+        }
+        else if instruction == Instruction::DI {
+            cycles = self.di()
         }
         
         cycles
@@ -1739,19 +1740,18 @@ impl Intel8080 {
     }
 
     // Input
-    fn input(&mut self) -> usize {
-        let port = self.registers.z();
+    fn input(&mut self, memory: &impl MemoryAccess) -> usize {
+        self.load_imm(memory);
+        self.io_port = self.registers.z();
         self.awaiting_input = true;
-        self.address_bus = (port as u16) << 8 | (port as u16);
-
         10
     }
 
     // Output
-    fn out(&mut self) -> usize {
-        let port = self.registers.z();
+    fn output(&mut self, memory: &impl MemoryAccess) -> usize {
+        self.load_imm(memory);
+        self.io_port = self.registers.z();
         self.output_ready = true;
-        self.address_bus = (port as u16) << 8 | (port as u16);
         10
     }
 
@@ -2608,16 +2608,76 @@ mod tests {
 
     #[test]
     fn test_input() {
+        let mut memory: Memory<3> = Memory::new();
+        memory.write(0, Instruction::IN as u8);
+        memory.write(1, 0x52);
+        memory.write(2, Instruction::NOP as u8);
 
+        let mut cpu = Intel8080::new();
+
+        cpu.step(&mut memory);
+        
+        assert!(cpu.awaiting_input());
+        assert_eq!(cpu.active_io_port(), 0x52);
+
+        cpu.write_input(0xFF);
+
+        cpu.step(&mut memory);
+        assert!(!cpu.awaiting_input());
+        assert_eq!(cpu.registers.accumulator(), 0xFF);
     }
 
     #[test]
     fn test_output() {
+        let mut memory: Memory<3> = Memory::new();
+        memory.write(0, Instruction::OUT as u8);
+        memory.write(1, 0x3C);
+        memory.write(2, Instruction::NOP as u8);
+
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_accumulator(0x5A);
+
+        cpu.step(&mut memory);
+        
+        assert!(cpu.output_ready());
+        assert_eq!(cpu.active_io_port(), 0x3C);
+        assert_eq!(cpu.read_output(), 0x5A);
+
+        cpu.step(&mut memory);
+        assert!(!cpu.output_ready());
 
     }
 
     #[test]
     fn test_interrupts() {
+        let mut memory: Memory<4> = Memory::new();
+        memory.write(0, Instruction::EI as u8);
+        memory.write(1, Instruction::MOV_A_L as u8);
+        memory.write(2, Instruction::DI as u8);
+        memory.write(3, Instruction::XRA_A as u8);
+        
+        let mut cpu = Intel8080::new();
+        cpu.registers.set_accumulator(0x75);
+        cpu.registers.set_l(0x85);
+        cpu.registers.set_h(0x55);
 
+        cpu.step(&mut memory); // EI
+
+        cpu.interrupt(Instruction::MOV_A_H);
+
+        cpu.step(&mut memory); // interrupt
+        assert_eq!(cpu.registers.pc(), 0x01);
+        assert_eq!(cpu.registers.accumulator(), cpu.registers.h());
+        assert_ne!(cpu.registers.accumulator(), cpu.registers.l());
+
+        cpu.step(&mut memory); // MOV_A_L
+        cpu.step(&mut memory); // DI
+        
+        cpu.interrupt(Instruction::MOV_H_A);
+
+        cpu.step(&mut memory); // XRA_A
+        assert_eq!(cpu.registers.pc(), 0x04);
+        assert_ne!(cpu.registers.h(), cpu.registers.accumulator());
+        assert_eq!(cpu.registers.accumulator(), 0x00);
     }
 }
