@@ -870,7 +870,7 @@ impl Intel8080 {
         let instruction = match self.interrupt_instruction.take() {
             Some(x) => x,
             None => { self.registers.set_pc(self.registers.pc() + 1);
-                        Instruction::from(memory.read(self.registers.pc() - 1))
+                        Instruction::from(memory.read_byte(self.registers.pc() - 1))
             }
         };
 
@@ -1091,7 +1091,7 @@ impl Intel8080 {
             Operand8::RegE => { self.registers.e() },
             Operand8::RegH => { self.registers.h() },
             Operand8::RegL => { self.registers.l() },
-            Operand8::Memory => { memory.read(self.registers.pair_h()) }
+            Operand8::Memory => { memory.read_byte(self.registers.pair_h()) }
             Operand8::RegA => { self.registers.accumulator() },
             Operand8::Immediate => { self.load_imm(memory); self.registers.z() }
         }
@@ -1105,7 +1105,7 @@ impl Intel8080 {
             Operand8::RegE => { self.registers.set_e(val) },
             Operand8::RegH => { self.registers.set_h(val) },
             Operand8::RegL => { self.registers.set_l(val) },
-            Operand8::Memory => { memory.write(self.registers.pair_h(), val); },
+            Operand8::Memory => { memory.write_byte(self.registers.pair_h(), val); },
             Operand8::RegA => { self.registers.set_accumulator(val) },
             Operand8::Immediate => { panic!("Can't write to immediate!") } 
         }
@@ -1229,10 +1229,10 @@ impl Intel8080 {
     fn stax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> usize {
         match dst {
             0 => {
-                memory.write(self.registers.pair_b(), self.registers.accumulator());
+                memory.write_byte(self.registers.pair_b(), self.registers.accumulator());
             },
             1 => {
-                memory.write(self.registers.pair_d(), self.registers.accumulator());
+                memory.write_byte(self.registers.pair_d(), self.registers.accumulator());
             },
             _ => { panic!("Invalid dst passed to STAX: {}!", dst) }
         };
@@ -1244,10 +1244,10 @@ impl Intel8080 {
     fn ldax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> usize {
         match dst {
             0 => {
-                self.registers.set_accumulator(memory.read(self.registers.pair_b()));
+                self.registers.set_accumulator(memory.read_byte(self.registers.pair_b()));
             },
             1 => {
-                self.registers.set_accumulator(memory.read(self.registers.pair_d()));
+                self.registers.set_accumulator(memory.read_byte(self.registers.pair_d()));
             },
             _ => { panic!("Invalid dst passed to LDAX: {}!", dst) }
         };
@@ -1493,8 +1493,8 @@ impl Intel8080 {
             _ => { unreachable!() }
         };
 
-        memory.write(self.registers.sp() - 1, first_register);
-        memory.write(self.registers.sp() - 2, second_register);
+        memory.write_byte(self.registers.sp() - 1, first_register);
+        memory.write_byte(self.registers.sp() - 2, second_register);
         self.registers.set_sp(self.registers.sp() - 2);
 
         11
@@ -1502,8 +1502,8 @@ impl Intel8080 {
 
     // Pop Data Off Stack
     fn pop(&mut self, dst: u8, memory: &impl MemoryAccess) -> usize {
-        let second_register = memory.read(self.registers.sp());
-        let first_register = memory.read(self.registers.sp() + 1);
+        let second_register = memory.read_byte(self.registers.sp());
+        let first_register = memory.read_byte(self.registers.sp() + 1);
 
         self.registers.set_sp(self.registers.sp() + 2);
 
@@ -1589,12 +1589,12 @@ impl Intel8080 {
     // Exchange Stack
     fn xthl(&mut self, memory: &mut impl MemoryAccess) -> usize {
         let temp = self.registers.h();
-        self.registers.set_h(memory.read(self.registers.sp() + 1));
-        memory.write(self.registers.sp() + 1, temp);
+        self.registers.set_h(memory.read_byte(self.registers.sp() + 1));
+        memory.write_byte(self.registers.sp() + 1, temp);
         
         let temp = self.registers.l();
-        self.registers.set_l(memory.read(self.registers.sp()));
-        memory.write(self.registers.sp(), temp);
+        self.registers.set_l(memory.read_byte(self.registers.sp()));
+        memory.write_byte(self.registers.sp(), temp);
         18
     }
 
@@ -1623,30 +1623,30 @@ impl Intel8080 {
     // Store Accumulator Direct
     fn sta(&mut self, memory: &mut impl MemoryAccess) -> usize {
         self.load_imm16(memory);
-        memory.write(self.registers.pair_w(), self.registers.accumulator());
+        memory.write_byte(self.registers.pair_w(), self.registers.accumulator());
         13
     }
 
     // Load Accumulator Direct
     fn lda(&mut self, memory: &mut impl MemoryAccess) -> usize {
         self.load_imm16(memory);
-        self.registers.set_accumulator(memory.read(self.registers.pair_w()));
+        self.registers.set_accumulator(memory.read_byte(self.registers.pair_w()));
         13
     }
 
     // Store H and L Direct
     fn shld(&mut self, memory: &mut impl MemoryAccess) -> usize {
         self.load_imm16(memory);
-        memory.write(self.registers.pair_w(), self.registers.l());
-        memory.write(self.registers.pair_w() + 1, self.registers.h());
+        memory.write_byte(self.registers.pair_w(), self.registers.l());
+        memory.write_byte(self.registers.pair_w() + 1, self.registers.h());
         16
     }
 
     // Load H and L Direct
     fn lhld(&mut self, memory: &mut impl MemoryAccess) -> usize {
         self.load_imm16(memory);
-        self.registers.set_l(memory.read(self.registers.pair_w()));
-        self.registers.set_h(memory.read(self.registers.pair_w() + 1));
+        self.registers.set_l(memory.read_byte(self.registers.pair_w()));
+        self.registers.set_h(memory.read_byte(self.registers.pair_w() + 1));
         15
     }
 
@@ -1689,8 +1689,8 @@ impl Intel8080 {
             let hi_addr = (self.registers.pc() >> 8) as u8;
             let lo_addr = (self.registers.pc() & 0xFF) as u8;
             
-            memory.write(self.registers.sp(), lo_addr);
-            memory.write(self.registers.sp() - 1, hi_addr);
+            memory.write_byte(self.registers.sp(), lo_addr);
+            memory.write_byte(self.registers.sp() - 1, hi_addr);
             
             self.registers.set_pc(self.registers.pair_w());
             
@@ -1703,8 +1703,8 @@ impl Intel8080 {
     // Return
     fn ret(&mut self, condition: u8, memory: &mut impl MemoryAccess) -> usize {
         if true {
-            let hi_addr = memory.read(self.registers.sp() + 1);
-            let lo_addr = memory.read(self.registers.sp() + 2);
+            let hi_addr = memory.read_byte(self.registers.sp() + 1);
+            let lo_addr = memory.read_byte(self.registers.sp() + 2);
             
             self.registers.set_sp(self.registers.sp() + 2);
             
@@ -1719,8 +1719,8 @@ impl Intel8080 {
         let hi_addr = (self.registers.pc() >> 8) as u8;
         let lo_addr = (self.registers.pc() & 0xFF) as u8;
         
-        memory.write(self.registers.sp(), lo_addr);
-        memory.write(self.registers.sp() - 1, hi_addr);
+        memory.write_byte(self.registers.sp(), lo_addr);
+        memory.write_byte(self.registers.sp() - 1, hi_addr);
         
         self.registers.set_sp(self.registers.sp() - 2);
         
@@ -1770,7 +1770,7 @@ mod tests {
     #[test]
     fn test_cma() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::CMA as u8);
+        memory.write_byte(0, Instruction::CMA as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1784,7 +1784,7 @@ mod tests {
     #[test]
     fn test_daa() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::DAA as u8);
+        memory.write_byte(0, Instruction::DAA as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1802,9 +1802,9 @@ mod tests {
     #[test]
     fn test_mov() {
         let mut memory: Memory<200> = Memory::new();
-        memory.write(0, Instruction::MOV_M_A as u8);
-        memory.write(1, Instruction::MOV_B_M as u8);
-        memory.write(2, Instruction::MOV_C_B as u8);
+        memory.write_byte(0, Instruction::MOV_M_A as u8);
+        memory.write_byte(1, Instruction::MOV_B_M as u8);
+        memory.write_byte(2, Instruction::MOV_C_B as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1813,11 +1813,11 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        assert_eq!(memory.read(160), cpu.registers.accumulator());
+        assert_eq!(memory.read_byte(160), cpu.registers.accumulator());
 
         cpu.step(&mut memory);
 
-        assert_eq!(memory.read(160), cpu.registers.b());
+        assert_eq!(memory.read_byte(160), cpu.registers.b());
 
         cpu.step(&mut memory);
 
@@ -1827,7 +1827,7 @@ mod tests {
     #[test]
     fn test_inr() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::INR_C as u8);
+        memory.write_byte(0, Instruction::INR_C as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1841,8 +1841,8 @@ mod tests {
     #[test]
     fn test_dcr() {
         let mut memory: Memory<200> = Memory::new();
-        memory.write(0, Instruction::DCR_M as u8);
-        memory.write(0x50, 0x40);
+        memory.write_byte(0, Instruction::DCR_M as u8);
+        memory.write_byte(0x50, 0x40);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1852,13 +1852,13 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        assert_eq!(memory.read(0x50), 0x3F);
+        assert_eq!(memory.read_byte(0x50), 0x3F);
     }
 
     #[test]
     fn test_stax() {
         let mut memory: Memory<200> = Memory::new();
-        memory.write(0, Instruction::STAX_B as u8);
+        memory.write_byte(0, Instruction::STAX_B as u8);
         
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1867,14 +1867,14 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        assert_eq!(cpu.registers.accumulator(), memory.read(56));
+        assert_eq!(cpu.registers.accumulator(), memory.read_byte(56));
     }
 
     #[test]
     fn test_ldax() {
         let mut memory: Memory<200> = Memory::new();
-        memory.write(0, Instruction::LDAX_D as u8);
-        memory.write(176, 0x35);
+        memory.write_byte(0, Instruction::LDAX_D as u8);
+        memory.write_byte(176, 0x35);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1883,13 +1883,13 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        assert_eq!(cpu.registers.accumulator(), memory.read(176));
+        assert_eq!(cpu.registers.accumulator(), memory.read_byte(176));
     }
 
     #[test]
     fn test_sub() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::SUB_A as u8);
+        memory.write_byte(0, Instruction::SUB_A as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1908,7 +1908,7 @@ mod tests {
     #[test]
     fn test_sbb() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::SBB_L as u8);
+        memory.write_byte(0, Instruction::SBB_L as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1929,7 +1929,7 @@ mod tests {
     #[test]
     fn test_ana() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::ANA_C as u8);
+        memory.write_byte(0, Instruction::ANA_C as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1948,8 +1948,8 @@ mod tests {
     #[test]
     fn test_xra() {
         let mut memory: Memory<2> = Memory::new();
-        memory.write(0, Instruction::XRA_A as u8);
-        memory.write(1, Instruction::XRA_B as u8);
+        memory.write_byte(0, Instruction::XRA_A as u8);
+        memory.write_byte(1, Instruction::XRA_B as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1980,7 +1980,7 @@ mod tests {
     #[test]
     fn test_ora() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::ORA_C as u8);
+        memory.write_byte(0, Instruction::ORA_C as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -1999,9 +1999,9 @@ mod tests {
     #[test]
     fn test_cmp() {
         let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::CMP_E as u8);
-        memory.write(1, Instruction::CMP_H as u8);
-        memory.write(2, Instruction::CMP_B as u8);
+        memory.write_byte(0, Instruction::CMP_E as u8);
+        memory.write_byte(1, Instruction::CMP_H as u8);
+        memory.write_byte(2, Instruction::CMP_B as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2037,7 +2037,7 @@ mod tests {
     #[test]
     fn test_rlc() {
         let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::RLC as u8);
+        memory.write_byte(0, Instruction::RLC as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2052,7 +2052,7 @@ mod tests {
     #[test]
     fn test_rrc() {
         let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::RRC as u8);
+        memory.write_byte(0, Instruction::RRC as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2067,7 +2067,7 @@ mod tests {
     #[test]
     fn test_ral() {
         let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::RAL as u8);
+        memory.write_byte(0, Instruction::RAL as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2083,7 +2083,7 @@ mod tests {
     #[test]
     fn test_rar() {
         let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::RAR as u8);
+        memory.write_byte(0, Instruction::RAR as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2099,12 +2099,12 @@ mod tests {
     #[test]
     fn test_mvi() {
         let mut memory: Memory<600> = Memory::new();
-        memory.write(0, Instruction::MVI_H as u8);
-        memory.write(1, 0x01);
-        memory.write(2, Instruction::MVI_L as u8);
-        memory.write(3, 0xF4);
-        memory.write(4, Instruction::MVI_M as u8);
-        memory.write(5, 0xFF);
+        memory.write_byte(0, Instruction::MVI_H as u8);
+        memory.write_byte(1, 0x01);
+        memory.write_byte(2, Instruction::MVI_L as u8);
+        memory.write_byte(3, 0xF4);
+        memory.write_byte(4, Instruction::MVI_M as u8);
+        memory.write_byte(5, 0xFF);
 
         let mut cpu = Intel8080::new();
         
@@ -2121,14 +2121,14 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.pc(), 0x06);
-        assert_eq!(memory.read(0x01F4), 0xFF);
+        assert_eq!(memory.read_byte(0x01F4), 0xFF);
     }
 
     #[test]
     fn test_adi() {
         let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::ADI as u8);
-        memory.write(1, 0x42);
+        memory.write_byte(0, Instruction::ADI as u8);
+        memory.write_byte(1, 0x42);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2148,8 +2148,8 @@ mod tests {
     #[test]
     fn test_aci() {
         let mut memory: Memory<2> = Memory::new();
-        memory.write(0, Instruction::ACI as u8);
-        memory.write(1, 0x42);
+        memory.write_byte(0, Instruction::ACI as u8);
+        memory.write_byte(1, 0x42);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2170,8 +2170,8 @@ mod tests {
     #[test]
     fn test_sui() {
         let mut memory: Memory<2> = Memory::new();
-        memory.write(0, Instruction::SUI as u8);
-        memory.write(1, 0x01);
+        memory.write_byte(0, Instruction::SUI as u8);
+        memory.write_byte(1, 0x01);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2191,11 +2191,11 @@ mod tests {
     #[test]
     fn test_sbi() {
         let mut memory: Memory<4> = Memory::new();
-        memory.write(0, Instruction::SBI as u8);
-        memory.write(1, 0x01);
+        memory.write_byte(0, Instruction::SBI as u8);
+        memory.write_byte(1, 0x01);
         
-        memory.write(2, Instruction::SBI as u8);
-        memory.write(3, 0x01);
+        memory.write_byte(2, Instruction::SBI as u8);
+        memory.write_byte(3, 0x01);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2229,8 +2229,8 @@ mod tests {
     #[test]
     fn test_ani() {
         let mut memory: Memory<2> = Memory::new();
-        memory.write(0, Instruction::ANI as u8);
-        memory.write(1, 0x0F);
+        memory.write_byte(0, Instruction::ANI as u8);
+        memory.write_byte(1, 0x0F);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2251,8 +2251,8 @@ mod tests {
     #[test]
     fn test_xri() {
         let mut memory: Memory<2> = Memory::new();
-        memory.write(0, Instruction::XRI as u8);
-        memory.write(1, 0x81);
+        memory.write_byte(0, Instruction::XRI as u8);
+        memory.write_byte(1, 0x81);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2273,8 +2273,8 @@ mod tests {
     #[test]
     fn test_ori() {
         let mut memory: Memory<2> = Memory::new();
-        memory.write(0, Instruction::ORI as u8);
-        memory.write(1, 0x0F);
+        memory.write_byte(0, Instruction::ORI as u8);
+        memory.write_byte(1, 0x0F);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2295,8 +2295,8 @@ mod tests {
     #[test]
     fn test_cpi() {
         let mut memory: Memory<2> = Memory::new();
-        memory.write(0, Instruction::CPI as u8);
-        memory.write(1, 0x40);
+        memory.write_byte(0, Instruction::CPI as u8);
+        memory.write_byte(1, 0x40);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2317,7 +2317,7 @@ mod tests {
     #[test]
     fn test_xchg() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::XCHG as u8);
+        memory.write_byte(0, Instruction::XCHG as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2337,11 +2337,11 @@ mod tests {
     #[test]
     fn test_xthl() {
         let mut memory: Memory<40> = Memory::new();
-        memory.write(0, Instruction::XTHL as u8);
-        memory.write(20, 0xFF);
-        memory.write(21, 0xF0);
-        memory.write(22, 0x0D);
-        memory.write(23, 0xFF);
+        memory.write_byte(0, Instruction::XTHL as u8);
+        memory.write_byte(20, 0xFF);
+        memory.write_byte(21, 0xF0);
+        memory.write_byte(22, 0x0D);
+        memory.write_byte(23, 0xFF);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_sp(21);
@@ -2357,16 +2357,16 @@ mod tests {
         assert_eq!(cpu.registers.l(), 0xF0);
         assert_eq!(initial_status, cpu.registers.status());
 
-        assert_eq!(memory.read(20), 0xFF);
-        assert_eq!(memory.read(21), 0x3C);
-        assert_eq!(memory.read(22), 0x0B);
-        assert_eq!(memory.read(23), 0xFF);
+        assert_eq!(memory.read_byte(20), 0xFF);
+        assert_eq!(memory.read_byte(21), 0x3C);
+        assert_eq!(memory.read_byte(22), 0x0B);
+        assert_eq!(memory.read_byte(23), 0xFF);
     }
 
     #[test]
     fn test_sphl() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::SPHL as u8);
+        memory.write_byte(0, Instruction::SPHL as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2381,13 +2381,13 @@ mod tests {
     #[test]
     fn test_sta_lda() {
         let mut memory: Memory<500> = Memory::new();
-        memory.write(0, Instruction::STA as u8);
-        memory.write(1, 0x24); // lo addr
-        memory.write(2, 0x01); // hi addr
-        memory.write(3, Instruction::LDA as u8);
-        memory.write(4, 0x56); // lo addr
-        memory.write(5, 0x01); // hi addr
-        memory.write(0x0156, 0x72);
+        memory.write_byte(0, Instruction::STA as u8);
+        memory.write_byte(1, 0x24); // lo addr
+        memory.write_byte(2, 0x01); // hi addr
+        memory.write_byte(3, Instruction::LDA as u8);
+        memory.write_byte(4, 0x56); // lo addr
+        memory.write_byte(5, 0x01); // hi addr
+        memory.write_byte(0x0156, 0x72);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2395,7 +2395,7 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        assert_eq!(memory.read(0x0124), 0x34);
+        assert_eq!(memory.read_byte(0x0124), 0x34);
         assert_eq!(cpu.registers.pc(), 0x3);
 
         cpu.step(&mut memory);
@@ -2407,14 +2407,14 @@ mod tests {
     #[test]
     fn test_shld_lhld() {
         let mut memory: Memory<650> = Memory::new();
-        memory.write(0, Instruction::SHLD as u8);
-        memory.write(1, 0x0A); // lo addr
-        memory.write(2, 0x01); // hi addr
-        memory.write(3, Instruction::LHLD as u8);
-        memory.write(4, 0x5B); // lo addr
-        memory.write(5, 0x02); // hi addr
-        memory.write(0x025B, 0xFF);
-        memory.write(0x025C, 0x03);
+        memory.write_byte(0, Instruction::SHLD as u8);
+        memory.write_byte(1, 0x0A); // lo addr
+        memory.write_byte(2, 0x01); // hi addr
+        memory.write_byte(3, Instruction::LHLD as u8);
+        memory.write_byte(4, 0x5B); // lo addr
+        memory.write_byte(5, 0x02); // hi addr
+        memory.write_byte(0x025B, 0xFF);
+        memory.write_byte(0x025C, 0x03);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2423,8 +2423,8 @@ mod tests {
 
         cpu.step(&mut memory);
 
-        assert_eq!(memory.read(0x010A), 0x29);
-        assert_eq!(memory.read(0x010B), 0xAE);
+        assert_eq!(memory.read_byte(0x010A), 0x29);
+        assert_eq!(memory.read_byte(0x010B), 0xAE);
         assert_eq!(cpu.registers.pc(), 0x3);
 
         cpu.step(&mut memory);
@@ -2436,7 +2436,7 @@ mod tests {
     #[test]
     fn test_dad() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::DAD_B as u8);
+        memory.write_byte(0, Instruction::DAD_B as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2453,7 +2453,7 @@ mod tests {
     #[test]
     fn test_dcx() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::DCX_H as u8);
+        memory.write_byte(0, Instruction::DCX_H as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_h(0x98);
@@ -2468,7 +2468,7 @@ mod tests {
     #[test]
     fn test_inx() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::INX_D as u8);
+        memory.write_byte(0, Instruction::INX_D as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_d(0x38);
@@ -2483,8 +2483,8 @@ mod tests {
     #[test]
     fn test_push_pop() {
         let mut memory: Memory<100> = Memory::new();
-        memory.write(0, Instruction::PUSH_D as u8);
-        memory.write(1, Instruction::POP_H as u8);
+        memory.write_byte(0, Instruction::PUSH_D as u8);
+        memory.write_byte(1, Instruction::POP_H as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_d(0xBF);
@@ -2494,8 +2494,8 @@ mod tests {
         cpu.step(&mut memory);
 
         assert_eq!(cpu.registers.sp(), 84);
-        assert_eq!(memory.read(85), 0xBF);
-        assert_eq!(memory.read(84), 0x9D);
+        assert_eq!(memory.read_byte(85), 0xBF);
+        assert_eq!(memory.read_byte(84), 0x9D);
 
         cpu.step(&mut memory);
 
@@ -2507,7 +2507,7 @@ mod tests {
     #[test]
     fn test_pchl() {
         let mut memory: Memory<1> = Memory::new();
-        memory.write(0, Instruction::PCHL as u8);
+        memory.write_byte(0, Instruction::PCHL as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
@@ -2522,10 +2522,10 @@ mod tests {
     #[test]
     fn test_jmp() {
         let mut memory: Memory<0x120> = Memory::new();
-        memory.write(0x10, Instruction::JMP as u8);
-        memory.write(0x11, 0x02); // lo addr
-        memory.write(0x12, 0x01); // hi addr
-        memory.write(0x102, Instruction::JC as u8);
+        memory.write_byte(0x10, Instruction::JMP as u8);
+        memory.write_byte(0x11, 0x02); // lo addr
+        memory.write_byte(0x12, 0x01); // hi addr
+        memory.write_byte(0x102, Instruction::JC as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0x10);
@@ -2545,15 +2545,15 @@ mod tests {
     #[test]
     fn test_call() {
         let mut memory: Memory<20> = Memory::new();
-        memory.write(0, Instruction::CALL as u8);
-        memory.write(1, 5); // lo addr
-        memory.write(2, 0); // hi addr 
+        memory.write_byte(0, Instruction::CALL as u8);
+        memory.write_byte(1, 5); // lo addr
+        memory.write_byte(2, 0); // hi addr 
         
-        memory.write(7, 0xFF);
-        memory.write(8, 0xFF);
-        memory.write(9, 0xFF);
-        memory.write(10, 0xFF);
-        memory.write(11, 0xFF);
+        memory.write_byte(7, 0xFF);
+        memory.write_byte(8, 0xFF);
+        memory.write_byte(9, 0xFF);
+        memory.write_byte(10, 0xFF);
+        memory.write_byte(11, 0xFF);
 
         let mut cpu = Intel8080::new();
 
@@ -2564,19 +2564,19 @@ mod tests {
 
         assert_eq!(cpu.registers.pc(), 0x05);
         assert_eq!(cpu.registers.sp(), 0x08);
-        assert_eq!(memory.read( 7), 0xFF);
-        assert_eq!(memory.read( 8), 0xFF);
-        assert_eq!(memory.read( 9), 0x00);
-        assert_eq!(memory.read(10), 0x03);
-        assert_eq!(memory.read(11), 0xFF);
+        assert_eq!(memory.read_byte( 7), 0xFF);
+        assert_eq!(memory.read_byte( 8), 0xFF);
+        assert_eq!(memory.read_byte( 9), 0x00);
+        assert_eq!(memory.read_byte(10), 0x03);
+        assert_eq!(memory.read_byte(11), 0xFF);
     }
 
     #[test]
     fn test_ret() {
         let mut memory: Memory<20> = Memory::new();
-        memory.write( 0, Instruction::RET as u8);
-        memory.write( 9, 0x00);
-        memory.write(10, 0x06);
+        memory.write_byte( 0, Instruction::RET as u8);
+        memory.write_byte( 9, 0x00);
+        memory.write_byte(10, 0x06);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0x00);
@@ -2591,7 +2591,7 @@ mod tests {
     #[test] 
     fn test_rst() {
         let mut memory: Memory<100> = Memory::new();
-        memory.write(0, Instruction::RST_2 as u8);
+        memory.write_byte(0, Instruction::RST_2 as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0x00);
@@ -2602,16 +2602,16 @@ mod tests {
         assert_eq!(cycles, 11);
         assert_eq!(cpu.registers.sp(), 0x0E);
         assert_eq!(cpu.registers.pc(), 0x08);
-        assert_eq!(memory.read(0x0F), 0x00);
-        assert_eq!(memory.read(0x10), 0x01);
+        assert_eq!(memory.read_byte(0x0F), 0x00);
+        assert_eq!(memory.read_byte(0x10), 0x01);
     }
 
     #[test]
     fn test_input() {
         let mut memory: Memory<3> = Memory::new();
-        memory.write(0, Instruction::IN as u8);
-        memory.write(1, 0x52);
-        memory.write(2, Instruction::NOP as u8);
+        memory.write_byte(0, Instruction::IN as u8);
+        memory.write_byte(1, 0x52);
+        memory.write_byte(2, Instruction::NOP as u8);
 
         let mut cpu = Intel8080::new();
 
@@ -2630,9 +2630,9 @@ mod tests {
     #[test]
     fn test_output() {
         let mut memory: Memory<3> = Memory::new();
-        memory.write(0, Instruction::OUT as u8);
-        memory.write(1, 0x3C);
-        memory.write(2, Instruction::NOP as u8);
+        memory.write_byte(0, Instruction::OUT as u8);
+        memory.write_byte(1, 0x3C);
+        memory.write_byte(2, Instruction::NOP as u8);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_accumulator(0x5A);
@@ -2651,10 +2651,10 @@ mod tests {
     #[test]
     fn test_interrupts() {
         let mut memory: Memory<4> = Memory::new();
-        memory.write(0, Instruction::EI as u8);
-        memory.write(1, Instruction::MOV_A_L as u8);
-        memory.write(2, Instruction::DI as u8);
-        memory.write(3, Instruction::XRA_A as u8);
+        memory.write_byte(0, Instruction::EI as u8);
+        memory.write_byte(1, Instruction::MOV_A_L as u8);
+        memory.write_byte(2, Instruction::DI as u8);
+        memory.write_byte(3, Instruction::XRA_A as u8);
         
         let mut cpu = Intel8080::new();
         cpu.registers.set_accumulator(0x75);
