@@ -886,12 +886,12 @@ impl Intel8080 {
         else if instruction == Instruction::STC {
             cycles = self.stc();
         }
-        else if instruction as u8 & 0xC7 == 0x04 {
-            let operand = (instruction as u8 & 0x38) >> 3;
+        else if instruction as u8 & 0b11_000_111 == 0b00_000_100 {
+            let operand = (instruction as u8 & 0b00_111_000) >> 3;
             cycles = self.inr(operand, memory);
         }
-        else if instruction as u8 & 0xC7 == 0x05 {
-            let operand = (instruction as u8 & 0x38) >> 3;
+        else if instruction as u8 & 0b11_000_111 == 0b00_000_101 {
+            let operand = (instruction as u8 & 0b00_111_000) >> 3;
             cycles = self.dcr(operand, memory);
         }
         else if instruction == Instruction::CMA {
@@ -900,49 +900,49 @@ impl Intel8080 {
         else if instruction == Instruction::DAA {
             cycles = self.daa();
         }
-        else if instruction as u8 & 0xC0 == 0x40 {
-            let dst = (instruction as u8 & 0x38) >> 3;
-            let src = instruction as u8 & 0x07;
+        else if instruction as u8 & 0b11_000_000 == 0b01_000_000 {
+            let dst = (instruction as u8 & 0b00_111_000) >> 3;
+            let src = instruction as u8 & 0b00_000_111;
             cycles = self.mov(dst, src, memory);
         }
-        else if instruction as u8 & 0xEF == 0x02 {
+        else if instruction as u8 & 0b111_0_1111 == 0b000_0_0010 {
             let dst = (instruction as u8 & 0x10) >> 4;
             cycles = self.stax(dst, memory);
         }
-        else if instruction as u8 & 0xEF == 0x0A {
-            let dst = (instruction as u8 & 0x10) >> 4;
+        else if instruction as u8 & 0b111_0_1111 == 0b000_0_1010 {
+            let dst = (instruction as u8 & 0b000_1_0000) >> 4;
             cycles = self.ldax(dst, memory);
         }
-        else if instruction as u8 & 0xF8 == 0x80 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10000_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.add(reg, memory);
         }
-        else if instruction as u8 & 0xF8 == 0x88 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10001_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.adc(reg, memory);
         }
-        else if instruction as u8 & 0xF8 == 0x90 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10010_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.sub(reg, memory);
         }
-        else if instruction as u8 & 0xF8 == 0x98 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10011_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.sbb(reg, memory);
         }
-        else if instruction as u8 & 0xF8 == 0xA0 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10100_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.ana(reg, memory);
         }
-        else if instruction as u8 & 0xF8 == 0xA8 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10101_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.xra(reg, memory);
         }
-        else if instruction as u8 & 0xF8 == 0xB0 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10110_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.ora(reg, memory);
         }
-        else if instruction as u8 & 0xF8 == 0xB8 {
-            let reg = instruction as u8 & 0x7;
+        else if instruction as u8 & 0b11111_000 == 0b10111_000 {
+            let reg = instruction as u8 & 0b00000_111;
             cycles = self.cmp(reg, memory);
         }
         else if instruction == Instruction::RLC {
@@ -957,24 +957,24 @@ impl Intel8080 {
         else if instruction == Instruction::RAR {
             cycles = self.rar();
         }
-        else if instruction as u8 & 0xCF == 0xC5 {
-            let dst = (instruction as u8 & 0x30) >> 4;
+        else if instruction as u8 & 0b11_00_1111 == 0b11_00_0101 {
+            let dst = (instruction as u8 & 0b00_11_0000) >> 4;
             cycles = self.push(dst, memory);
         }
-        else if instruction as u8 & 0xCF == 0xC1 {
-            let dst = (instruction as u8 & 0x30) >> 4;
+        else if instruction as u8 & 0b11_00_1111 == 0b11_00_0001 {
+            let dst = (instruction as u8 & 0b00_11_0000) >> 4;
             cycles = self.pop(dst, memory);
         }
-        else if instruction as u8 & 0xCF == 0x09 {
-            let src = (instruction as u8 & 0x30) >> 4;
+        else if instruction as u8 & 0b11_00_1111 == 0b00_00_1001 {
+            let src = (instruction as u8 & 0b00_11_0000) >> 4;
             cycles = self.dad(src);
         }
-        else if instruction as u8 & 0xCF == 0x03 {
-            let src = (instruction as u8 & 0x30) >> 4;
+        else if instruction as u8 & 0b11_00_1111 == 0b00_00_0011 {
+            let src = (instruction as u8 & 0b00_11_0000) >> 4;
             cycles = self.inx(src);
         }
-        else if instruction as u8 & 0xCF == 0x0B {
-            let src = (instruction as u8 & 0x30) >> 4;
+        else if instruction as u8 & 0b11_00_1111 == 0b00_00_1011 {
+            let src = (instruction as u8 & 0b00_11_0000) >> 4;
             cycles = self.dcx(src);
         }
         else if instruction == Instruction::XCHG {
@@ -986,12 +986,12 @@ impl Intel8080 {
         else if instruction == Instruction::SPHL {
             cycles = self.sphl();
         }
-        else if instruction as u8 & 0xCF == 0x1 {
-            let reg = (instruction as u8 & 0x30) >> 4;
+        else if instruction as u8 & 0b11_00_1111 == 0b00_00_0001 {
+            let reg = (instruction as u8 & 0b00_11_0000) >> 4;
             cycles = self.lxi(reg, memory);
         }
-        else if instruction as u8 & 0xC7 == 0x06 {
-            let reg = (instruction as u8 & 0x38) >> 3;
+        else if instruction as u8 & 0b11_000_111 == 0b00_000_110 {
+            let reg = (instruction as u8 & 0b00_111_000) >> 3;
             cycles = self.mov(reg, Operand8::Immediate as u8, memory);
         }
         else if instruction == Instruction::ADI {
@@ -1033,8 +1033,8 @@ impl Intel8080 {
         else if instruction == Instruction::JMP {
             cycles = self.jmp(8, memory);
         }
-        else if instruction as u8 & 0xC7 == 0xC2 {
-            cycles = self.jmp((instruction as u8 & 0x38) >> 3, memory);
+        else if instruction as u8 & 0b11_000_111 == 0b11_000_010 {
+            cycles = self.jmp((instruction as u8 & 0b00_111_000) >> 3, memory);
         }
         else if instruction == Instruction::PCHL {
             cycles = self.pchl();
@@ -1042,17 +1042,17 @@ impl Intel8080 {
         else if instruction == Instruction::CALL {
             cycles = self.call(8, memory);
         }
-        else if instruction as u8 & 0xC7 == 0xC4 {
-            cycles = self.call((instruction as u8 & 0x38) >> 3, memory);
+        else if instruction as u8 & 0b11_000_111 == 0b11_000_010 {
+            cycles = self.call((instruction as u8 & 0b00_111_000) >> 3, memory);
         }
         else if instruction == Instruction::RET {
             cycles = self.ret(8, memory);
         }
-        else if instruction as u8 & 0xC7 == 0xC0 {
-            cycles = self.ret((instruction as u8 & 0x38) >> 3, memory);
+        else if instruction as u8 & 0b11_000_111 == 0b11_000_000 {
+            cycles = self.ret((instruction as u8 & 0b00_111_000) >> 3, memory);
         }
-        else if instruction as u8 & 0xC7 == 0xC7 {
-            cycles = self.rst((instruction as u8 & 0x38) >> 3, memory);
+        else if instruction as u8 & 0b11_000_111 == 0b11_000_111 {
+            cycles = self.rst((instruction as u8 & 0b00_111_000) >> 3, memory);
         }
         else if instruction == Instruction::IN {
             cycles = self.input(memory)
