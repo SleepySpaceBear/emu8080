@@ -858,14 +858,20 @@ impl Intel8080 {
     pub fn step(&mut self, memory: &mut impl MemoryAccess) -> usize {
         self.awaiting_input = false;
         self.output_ready = false;
-
-        let instruction = self.fetch_instruction(memory);
-        self.do_instruction(instruction, memory)
+        
+        if !self.stopped {
+            let instruction = self.fetch_instruction(memory);
+            return self.do_instruction(instruction, memory)
+        }
+        else {
+            return 0
+        }
     }
 
     pub fn interrupt(&mut self, instruction: Instruction) {
         if self.inte {
-            self.interrupt_instruction = Some(instruction)
+            self.interrupt_instruction = Some(instruction);
+            self.stopped = false;
         }
     }
 
@@ -1068,6 +1074,9 @@ impl Intel8080 {
         }
         else if instruction == Instruction::DI {
             cycles = self.di()
+        }
+        else if instruction == Instruction::HLT {
+            cycles = self.hlt()
         }
         
         cycles
