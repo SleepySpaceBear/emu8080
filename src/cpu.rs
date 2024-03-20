@@ -4,6 +4,9 @@ use crate::registers::Registers as Registers;
 use crate::memory::MemoryAccess as MemoryAccess;
 use crate::utils::*;
 
+// 2 MHz
+pub const CYCLE_TIME: f64 = 0.000_000_5;
+
 #[allow(non_camel_case_types)]
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
