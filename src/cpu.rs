@@ -910,9 +910,15 @@ impl Intel8080 {
             cycles = self.daa();
         }
         else if instruction as u8 & 0b11_000_000 == 0b01_000_000 {
-            let dst = (instruction as u8 & 0b00_111_000) >> 3;
-            let src = instruction as u8 & 0b00_000_111;
-            cycles = self.mov(dst, src, memory);
+            // MOV M,M is the HLT instruction
+            if instruction == Instruction::HLT {
+                cycles = self.hlt()
+            }
+            else {
+                let dst = (instruction as u8 & 0b00_111_000) >> 3;
+                let src = instruction as u8 & 0b00_000_111;
+                cycles = self.mov(dst, src, memory);
+            }
         }
         else if instruction as u8 & 0b111_0_1111 == 0b000_0_0010 {
             let dst = (instruction as u8 & 0x10) >> 4;
@@ -1074,9 +1080,6 @@ impl Intel8080 {
         }
         else if instruction == Instruction::DI {
             cycles = self.di()
-        }
-        else if instruction == Instruction::HLT {
-            cycles = self.hlt()
         }
         
         cycles
@@ -2658,6 +2661,21 @@ mod tests {
         cpu.step(&mut memory);
         assert!(!cpu.output_ready());
 
+    }
+
+    #[test]
+    fn test_hlt() {
+        let mut memory: Memory<1> = Memory::new();
+        memory.write_byte(0, Instruction::HLT as u8);
+
+        let mut cpu = Intel8080::new();
+
+        let cycles = cpu.step(&mut memory);
+
+        assert_eq!(cycles, 7);
+        assert!(cpu.stopped);
+        assert_eq!(cpu.step(&mut memory), 0);
+        assert_eq!(cpu.registers.pc(), 0x01);
     }
 
     #[test]
