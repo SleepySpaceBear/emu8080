@@ -3,7 +3,8 @@ use std::usize;
 use crate::memory::MemoryAccess as MemoryAccess;
 
 // 2 MHz
-pub const CYCLE_TIME: f64 = 0.000_000_5;
+pub const CYCLE_TIME_SECS: f64 = 0.000_000_5;
+pub const CYCLE_TIME_NANO_SECS: u64 = 500;
 
 #[allow(non_camel_case_types)]
 
@@ -1103,7 +1104,7 @@ impl Intel8080 {
         }
     }
 
-    pub fn step(&mut self, memory: &mut impl MemoryAccess) -> usize {
+    pub fn step(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         self.awaiting_input = false;
         self.output_ready = false;
         
@@ -1134,7 +1135,7 @@ impl Intel8080 {
         return instruction
     }
 
-    fn do_instruction(&mut self, instruction: Instruction, memory: &mut impl MemoryAccess) -> usize {
+    fn do_instruction(&mut self, instruction: Instruction, memory: &mut impl MemoryAccess) -> u64 {
         let mut cycles = 4;
 
         if instruction == Instruction::CMC {
@@ -1401,19 +1402,19 @@ impl Intel8080 {
     }
 
     // Set Carry
-    fn stc(&mut self) -> usize {
+    fn stc(&mut self) -> u64 {
         self.registers.set_status_carry(true);
         4
     }
 
     // Complement Carry
-    fn cmc(&mut self) -> usize {
+    fn cmc(&mut self) -> u64 {
         self.registers.set_status_carry(!self.registers.status_carry());
         4
     }
 
     // Increment Register or Memory
-    fn inr(&mut self, reg: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn inr(&mut self, reg: u8, memory: &mut impl MemoryAccess) -> u64 {
         let reg = Operand8::from(reg);
         let val = self.get_src(reg, memory);
         let val = val.wrapping_add(1);
@@ -1429,7 +1430,7 @@ impl Intel8080 {
     }
 
     // Decrement Register or Memory
-    fn dcr(&mut self, reg: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn dcr(&mut self, reg: u8, memory: &mut impl MemoryAccess) -> u64 {
         // Note: This is equivalent in Intel8080 to adding 0xFF to the value
         // due to the usage of 2s complement representation. Carry bits will be 
         // set accordingly.
@@ -1449,13 +1450,13 @@ impl Intel8080 {
     }
 
     // Complement Accumulator
-    fn cma(&mut self) -> usize {
+    fn cma(&mut self) -> u64 {
         self.registers.set_accumulator(!self.registers.accumulator());
         4
     }
 
     // Decimal Adjust Accumulator
-    fn daa(&mut self) -> usize {
+    fn daa(&mut self) -> u64 {
         let mut val: u8 = self.registers.accumulator();
         
         let aux_carry = val & 0xF > 0x9;
@@ -1476,7 +1477,7 @@ impl Intel8080 {
     }
 
     // Move
-    fn mov(&mut self, dst: u8, src: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn mov(&mut self, dst: u8, src: u8, memory: &mut impl MemoryAccess) -> u64 {
         let dst = Operand8::from(dst);
         let src = Operand8::from(src);
         let val = self.get_src(src, memory);
@@ -1489,7 +1490,7 @@ impl Intel8080 {
     }
 
     // Store Accumulator
-    fn stax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn stax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> u64 {
         match dst {
             0 => {
                 memory.write_byte(self.registers.pair_b(), self.registers.accumulator());
@@ -1504,7 +1505,7 @@ impl Intel8080 {
     }
 
     // Load Accumulator
-    fn ldax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn ldax(&mut self, dst: u8, memory: &mut impl MemoryAccess) -> u64 {
         match dst {
             0 => {
                 self.registers.set_accumulator(memory.read_byte(self.registers.pair_b()));
@@ -1519,7 +1520,7 @@ impl Intel8080 {
     }
 
     // ADD Register or Memory to Accumulator
-    fn add(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn add(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src);
 
         let old_val: u8 = self.registers.accumulator();
@@ -1540,7 +1541,7 @@ impl Intel8080 {
     }
 
     // ADD Register or Memory to Accumulator With Carry
-    fn adc(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn adc(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src);
         
         let old_val: u8 = self.registers.accumulator();
@@ -1562,7 +1563,7 @@ impl Intel8080 {
     }
 
     // Subtract Register or Memory From Accumulator
-    fn sub(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn sub(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src);
 
         let old_val = self.registers.accumulator();
@@ -1583,7 +1584,7 @@ impl Intel8080 {
     } 
 
     // Subtract Register or Memory From Accumulator With Borrow
-    fn sbb(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn sbb(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src); 
 
         let old_val = self.registers.accumulator();
@@ -1606,7 +1607,7 @@ impl Intel8080 {
     }
 
     // Logical and Register or Memory With Accumulator
-    fn ana(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn ana(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src);
 
         let val: u8 = self.registers.accumulator() & self.get_src(src, memory);
@@ -1621,7 +1622,7 @@ impl Intel8080 {
     }
 
     // Logical Exclusive-Or Register or Memory with Accumulator
-    fn xra(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn xra(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src); 
 
         let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
@@ -1636,7 +1637,7 @@ impl Intel8080 {
     }
 
     // Logical or Register or Memory with Accumulator
-    fn ora(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn ora(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src);
 
         let val: u8 = self.registers.accumulator() | self.get_src(src, memory);
@@ -1651,7 +1652,7 @@ impl Intel8080 {
     }
 
     // Compare Register or Memory with Accumulator
-    fn cmp(&mut self, src: u8, memory: &impl MemoryAccess) -> usize {
+    fn cmp(&mut self, src: u8, memory: &impl MemoryAccess) -> u64 {
         let src = Operand8::from(src);
 
         let old_val = self.registers.accumulator();
@@ -1671,7 +1672,7 @@ impl Intel8080 {
     }
 
     // Rotate Accumulator Left
-    fn rlc(&mut self) -> usize {
+    fn rlc(&mut self) -> u64 {
         let val: u8 = self.registers.accumulator();
         
         // check left-most bit
@@ -1690,7 +1691,7 @@ impl Intel8080 {
     }
 
     // Rotate Accumulator Right
-    fn rrc(&mut self) -> usize {
+    fn rrc(&mut self) -> u64 {
         let val: u8 = self.registers.accumulator();
         
         // check right-most bit
@@ -1709,7 +1710,7 @@ impl Intel8080 {
     }
 
     // Rotate Accumulator Left Through Carry
-    fn ral(&mut self) -> usize {
+    fn ral(&mut self) -> u64 {
         let val: u8 = self.registers.accumulator();
         let old_carry: bool = self.registers.status_carry();
 
@@ -1724,7 +1725,7 @@ impl Intel8080 {
     }
 
     // Rotate Accumulator Right Through Carry
-    fn rar(&mut self) -> usize {
+    fn rar(&mut self) -> u64 {
         let val: u8 = self.registers.accumulator();
         let old_carry: bool = self.registers.status_carry();
 
@@ -1739,7 +1740,7 @@ impl Intel8080 {
     }
 
     // Push Data Onto Stack
-    fn push(&mut self, src: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn push(&mut self, src: u8, memory: &mut impl MemoryAccess) -> u64 {
         let first_register = match src {
             0 => { self.registers.b() },
             1 => { self.registers.d() },
@@ -1764,7 +1765,7 @@ impl Intel8080 {
     }
 
     // Pop Data Off Stack
-    fn pop(&mut self, dst: u8, memory: &impl MemoryAccess) -> usize {
+    fn pop(&mut self, dst: u8, memory: &impl MemoryAccess) -> u64 {
         let second_register = memory.read_byte(self.registers.sp());
         let first_register = memory.read_byte(self.registers.sp() + 1);
 
@@ -1793,7 +1794,7 @@ impl Intel8080 {
     }
 
     // Double Add
-    fn dad(&mut self, src: u8) -> usize {
+    fn dad(&mut self, src: u8) -> u64 {
         let src = match src {
             0 => Operand16::RegPairB,
             1 => Operand16::RegPairD,
@@ -1812,7 +1813,7 @@ impl Intel8080 {
     }
 
     // Increment Register Pair
-    fn inx(&mut self, src: u8) -> usize {
+    fn inx(&mut self, src: u8) -> u64 {
         let src = match src {
             0 => Operand16::RegPairB,
             1 => Operand16::RegPairD,
@@ -1827,7 +1828,7 @@ impl Intel8080 {
     }
 
     // Decrement Register Pair
-    fn dcx(&mut self, src: u8) -> usize {
+    fn dcx(&mut self, src: u8) -> u64 {
         let src = match src {
             0 => Operand16::RegPairB,
             1 => Operand16::RegPairD,
@@ -1842,7 +1843,7 @@ impl Intel8080 {
     }
 
     // Exchange Registers
-    fn xchg(&mut self) -> usize {
+    fn xchg(&mut self) -> u64 {
         let temp = self.registers.pair_h();
         self.registers.set_pair_h(self.registers.pair_d());
         self.registers.set_pair_d(temp);
@@ -1850,7 +1851,7 @@ impl Intel8080 {
     }
 
     // Exchange Stack
-    fn xthl(&mut self, memory: &mut impl MemoryAccess) -> usize {
+    fn xthl(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         let temp = self.registers.h();
         self.registers.set_h(memory.read_byte(self.registers.sp() + 1));
         memory.write_byte(self.registers.sp() + 1, temp);
@@ -1862,13 +1863,13 @@ impl Intel8080 {
     }
 
     // Load SP From H and L
-    fn sphl(&mut self) -> usize {
+    fn sphl(&mut self) -> u64 {
         self.registers.set_sp(self.registers.pair_h());
         5
     }
 
     // Load Register Pair Immediate
-    fn lxi(&mut self, dst: u8, memory: &impl MemoryAccess) -> usize {
+    fn lxi(&mut self, dst: u8, memory: &impl MemoryAccess) -> u64 {
         let dst = match dst {
             0 => Operand16::RegPairB,
             1 => Operand16::RegPairD,
@@ -1884,21 +1885,21 @@ impl Intel8080 {
     }
 
     // Store Accumulator Direct
-    fn sta(&mut self, memory: &mut impl MemoryAccess) -> usize {
+    fn sta(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
         memory.write_byte(self.registers.pair_w(), self.registers.accumulator());
         13
     }
 
     // Load Accumulator Direct
-    fn lda(&mut self, memory: &mut impl MemoryAccess) -> usize {
+    fn lda(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
         self.registers.set_accumulator(memory.read_byte(self.registers.pair_w()));
         13
     }
 
     // Store H and L Direct
-    fn shld(&mut self, memory: &mut impl MemoryAccess) -> usize {
+    fn shld(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
         memory.write_byte(self.registers.pair_w(), self.registers.l());
         memory.write_byte(self.registers.pair_w() + 1, self.registers.h());
@@ -1906,7 +1907,7 @@ impl Intel8080 {
     }
 
     // Load H and L Direct
-    fn lhld(&mut self, memory: &mut impl MemoryAccess) -> usize {
+    fn lhld(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
         self.registers.set_l(memory.read_byte(self.registers.pair_w()));
         self.registers.set_h(memory.read_byte(self.registers.pair_w() + 1));
@@ -1914,7 +1915,7 @@ impl Intel8080 {
     }
 
     // Load Program Counter
-    fn pchl(&mut self) -> usize {
+    fn pchl(&mut self) -> u64 {
         self.registers.set_pc(self.registers.pair_h());
         5
     }
@@ -1934,7 +1935,7 @@ impl Intel8080 {
     }
 
     // Jump
-    fn jmp(&mut self, condition: u8, memory: &impl MemoryAccess) -> usize {
+    fn jmp(&mut self, condition: u8, memory: &impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
 
         if self.check_condition(condition) {
@@ -1945,7 +1946,7 @@ impl Intel8080 {
     }
 
     // Call
-    fn call(&mut self, condition: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn call(&mut self, condition: u8, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
 
         if self.check_condition(condition) {
@@ -1964,7 +1965,7 @@ impl Intel8080 {
     }
     
     // Return
-    fn ret(&mut self, condition: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn ret(&mut self, condition: u8, memory: &mut impl MemoryAccess) -> u64 {
         if true {
             let hi_addr = memory.read_byte(self.registers.sp() + 1);
             let lo_addr = memory.read_byte(self.registers.sp() + 2);
@@ -1978,7 +1979,7 @@ impl Intel8080 {
         };
         5
     }
-    fn rst(&mut self, exp: u8, memory: &mut impl MemoryAccess) -> usize {
+    fn rst(&mut self, exp: u8, memory: &mut impl MemoryAccess) -> u64 {
         let hi_addr = (self.registers.pc() >> 8) as u8;
         let lo_addr = (self.registers.pc() & 0xFF) as u8;
         
@@ -1991,19 +1992,19 @@ impl Intel8080 {
         11
     }
     // Enable Interrupts
-    fn ei(&mut self) -> usize {
+    fn ei(&mut self) -> u64 {
         self.inte = true;
         4
     }
 
     // Disable Interrupts
-    fn di(&mut self) -> usize {
+    fn di(&mut self) -> u64 {
         self.inte = false;
         4
     }
 
     // Input
-    fn input(&mut self, memory: &impl MemoryAccess) -> usize {
+    fn input(&mut self, memory: &impl MemoryAccess) -> u64 {
         self.load_imm(memory);
         self.io_port = self.registers.z();
         self.awaiting_input = true;
@@ -2011,7 +2012,7 @@ impl Intel8080 {
     }
 
     // Output
-    fn output(&mut self, memory: &impl MemoryAccess) -> usize {
+    fn output(&mut self, memory: &impl MemoryAccess) -> u64 {
         self.load_imm(memory);
         self.io_port = self.registers.z();
         self.output_ready = true;
@@ -2019,7 +2020,7 @@ impl Intel8080 {
     }
 
     // Halt
-    fn hlt(&mut self) -> usize {
+    fn hlt(&mut self) -> u64 {
         self.stopped = true;
         7
     }
