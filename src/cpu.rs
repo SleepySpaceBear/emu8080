@@ -1,8 +1,6 @@
 use std::usize;
 
-use crate::registers::Registers as Registers;
 use crate::memory::MemoryAccess as MemoryAccess;
-use crate::utils::*;
 
 // 2 MHz
 pub const CYCLE_TIME: f64 = 0.000_000_5;
@@ -751,6 +749,256 @@ impl From<u8> for Instruction {
             0x76 => return Instruction::HLT,
             _ => return Instruction::NOP
         }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[repr(u8)]
+enum StatusFlags {
+    SignBit = 0x80,
+    ZeroBit = 0x40,
+    AuxCarryBit = 0x10,
+    ParityBit = 0x04,
+    CarryBit = 0x01
+}
+
+struct Registers {
+    pc: u16, // Program Counter
+    sp: u16, // Stack Pointer
+    b: u8,
+    c: u8,
+    d: u8,
+    e: u8,
+    h: u8,
+    l: u8,
+    accumulator: u8,
+    status: u8,
+    w: u8,
+    z: u8
+}
+
+impl Registers {
+    fn new() -> Self {
+        Self {
+            pc: 0,
+            sp: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            h: 0,
+            l: 0,
+            accumulator: 0,
+            status: 0x2,
+            w: 0,
+            z: 0
+        }
+    }
+
+    fn pc(&self) -> u16 {
+        self.pc
+    }
+
+    fn set_pc(&mut self, val: u16) {
+        self.pc = val
+    }
+
+
+    fn sp(&self) -> u16 {
+        self.sp
+    }
+
+    fn set_sp(&mut self, val: u16) {
+        self.sp = val
+    }
+
+
+    fn pair_b(&self) -> u16 {
+        make_u16(self.b, self.c)
+    }
+
+    fn set_pair_b(&mut self, val: u16) {
+       self.b = ((val >> 8) & 0xFF) as u8;
+       self.c = (val & 0xFF) as u8
+    }
+
+    fn b(&self) -> u8 {
+        self.b
+    }
+
+    fn set_b(&mut self, val: u8) {
+        self.b = val 
+    }
+
+    fn c(&self) -> u8 {
+        self.c 
+    }
+
+    fn set_c(&mut self, val: u8) {
+        self.c = val 
+    }
+
+
+    fn pair_d(&self) -> u16 {
+        make_u16(self.d, self.e)
+    }
+
+    fn set_pair_d(&mut self, val: u16) {
+       self.d = ((val >> 8) & 0xFF) as u8;
+       self.e = (val & 0xFF) as u8
+    }
+
+    fn d(&self) -> u8 {
+        self.d 
+    }
+
+    fn set_d(&mut self, val: u8) {
+        self.d = val 
+    }
+
+    fn e(&self) -> u8 {
+        self.e 
+    }
+
+    fn set_e(&mut self, val: u8) {
+        self.e = val 
+    }
+
+
+    fn pair_h(&self) -> u16 {
+        make_u16(self.h, self.l)
+    }
+
+    fn set_pair_h(&mut self, val: u16) {
+       self.h = ((val >> 8) & 0xFF) as u8;
+       self.l = (val & 0xFF) as u8
+    } 
+
+    fn h(&self) -> u8 {
+        self.h 
+    }
+
+    fn set_h(&mut self, val: u8) {
+        self.h = val 
+    }
+
+    fn l(&self) -> u8 {
+        self.l 
+    }
+
+    fn set_l(&mut self, val: u8) {
+        self.l = val
+    }
+
+
+    fn psw(&self) -> u16 {
+        make_u16(self.accumulator, self.status)
+    }
+
+    fn set_psw(&mut self, val: u16) {
+        self.accumulator = ((val >> 8) & 0xFF) as u8;
+        self.set_status((val & 0xFF) as u8);
+    }
+
+    fn accumulator(&self) -> u8 {
+        self.accumulator 
+    }
+
+    fn set_accumulator(&mut self, val: u8) {
+        self.accumulator = val
+    }
+
+    fn status(&self) -> u8 {
+        self.status
+    }
+
+    fn set_status(&mut self, val: u8) {
+        self.status = 0x2 | (val & 0xC5);
+    }
+
+    fn status_carry(&self) -> bool {
+        return (self.status & (StatusFlags::CarryBit as u8)) != 0; 
+    }
+
+    fn set_status_carry(&mut self, carry: bool) {
+        if carry {
+            self.status |= StatusFlags::CarryBit as u8;
+        }
+        else {
+            self.status &= !(StatusFlags::CarryBit as u8);
+        }
+    }
+    
+    fn status_aux_carry(&self) -> bool {
+        return (self.status & (StatusFlags::AuxCarryBit as u8)) != 0; 
+    }
+
+    fn set_status_aux_carry(&mut self, aux_carry: bool) {
+        if aux_carry {
+            self.status |= StatusFlags::AuxCarryBit as u8;
+        }
+        else {
+            self.status &= !(StatusFlags::AuxCarryBit as u8);
+        }
+    }
+
+    fn status_zero(&self) -> bool {
+        return (self.status & StatusFlags::ZeroBit as u8) != 0; 
+    }
+
+    fn set_status_zero(&mut self, zero: bool) {
+        if zero {
+            self.status |= StatusFlags::ZeroBit as u8;
+        }
+        else {
+            self.status &= !(StatusFlags::ZeroBit as u8);
+        }
+    }
+    
+    fn status_parity(&self) -> bool {
+        return (self.status & (StatusFlags::ParityBit as u8)) != 0; 
+    }
+
+    fn set_status_parity(&mut self, parity: bool) {
+        if parity {
+            self.status |= StatusFlags::ParityBit as u8;
+        }
+        else {
+            self.status &= !(StatusFlags::ParityBit as u8);
+        }
+    }
+    
+    fn status_sign(&self) -> bool {
+        return (self.status & (StatusFlags::SignBit as u8)) != 0; 
+    }
+
+    fn set_status_sign(&mut self, sign: bool) {
+        if sign {
+            self.status |= StatusFlags::SignBit as u8;
+        }
+        else {
+            self.status &= !(StatusFlags::SignBit as u8);
+        }
+    }
+
+    fn w(&self) -> u8 {
+       self.w 
+    }
+
+    fn set_w(&mut self, val: u8) {
+        self.w = val;
+    }
+    
+    pub fn z(&self) -> u8 {
+       self.z 
+    }
+
+    fn set_z(&mut self, val: u8) {
+        self.z = val;
+    }
+
+    fn pair_w(&self) -> u16 {
+       make_u16(self.w(), self.z())
     }
 }
 
@@ -1776,6 +2024,39 @@ impl Intel8080 {
         7
     }
 }
+
+// UTILITY FUNCTIONS
+
+fn check_carry(old_val: u8, new_val: u8) -> bool {
+    if new_val < old_val {
+        return true;
+    }
+    return false;
+}
+
+fn check_aux_carry(old_val: u8, new_val: u8) -> bool {
+    if (new_val & 0xF) < (old_val & 0xF) {
+        return true;
+    }
+    return false;
+}
+
+fn parity_even(val: u8) -> bool {
+    let val: u8 = (0x0F & val) ^ (val >> 4);
+    let val: u8 = (0x03 & val) ^ (val >> 2);
+    let val: u8 = (0x01 & val) ^ (val >> 1);
+    return val == 0;
+}
+
+fn twos_complement(val: u8) -> u8 {
+    return (!val).wrapping_add(1)
+}
+
+fn make_u16(higher_order: u8, lower_order: u8) -> u16 {
+    return ((higher_order as u16) << 8) | (lower_order as u16)
+}
+
+// END UTILITY FUNCTIONS
 
 #[cfg(test)]
 mod tests {
