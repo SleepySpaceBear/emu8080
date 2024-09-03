@@ -1127,8 +1127,8 @@ impl Intel8080 {
     fn fetch_instruction(&mut self, memory: &impl MemoryAccess) -> Instruction {
         let instruction = match self.interrupt_instruction.take() {
             Some(x) => x,
-            None => { self.registers.set_pc(self.registers.pc() + 1);
-                        Instruction::from(memory.read_byte(self.registers.pc() - 1))
+            None => { self.registers.set_pc(self.registers.pc().wrapping_add(1));
+                        Instruction::from(memory.read_byte(self.registers.pc().wrapping_sub(1)))
             }
         };
 
