@@ -1757,9 +1757,9 @@ impl Intel8080 {
             _ => { unreachable!() }
         };
 
-        memory.write_byte(self.registers.sp() - 1, first_register);
-        memory.write_byte(self.registers.sp() - 2, second_register);
-        self.registers.set_sp(self.registers.sp() - 2);
+        memory.write_byte(self.registers.sp().wrapping_sub(1), first_register);
+        memory.write_byte(self.registers.sp().wrapping_sub(2), second_register);
+        self.registers.set_sp(self.registers.sp().wrapping_sub(2));
 
         11
     }
@@ -1767,9 +1767,9 @@ impl Intel8080 {
     // Pop Data Off Stack
     fn pop(&mut self, dst: u8, memory: &impl MemoryAccess) -> u64 {
         let second_register = memory.read_byte(self.registers.sp());
-        let first_register = memory.read_byte(self.registers.sp() + 1);
+        let first_register = memory.read_byte(self.registers.sp().wrapping_add(1));
 
-        self.registers.set_sp(self.registers.sp() + 2);
+        self.registers.set_sp(self.registers.sp().wrapping_add(2));
 
         match dst {
             0 => {
@@ -1823,7 +1823,7 @@ impl Intel8080 {
         };
         
         let val = self.get_src_16(src);
-        self.write_dst_16(src, val + 1);
+        self.write_dst_16(src, val.wrapping_add(1));
         5
     }
 
@@ -1838,7 +1838,7 @@ impl Intel8080 {
         };
         
         let val = self.get_src_16(src);
-        self.write_dst_16(src, val - 1);
+        self.write_dst_16(src, val.wrapping_sub(1));
         5
     }
 
@@ -1853,8 +1853,8 @@ impl Intel8080 {
     // Exchange Stack
     fn xthl(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         let temp = self.registers.h();
-        self.registers.set_h(memory.read_byte(self.registers.sp() + 1));
-        memory.write_byte(self.registers.sp() + 1, temp);
+        self.registers.set_h(memory.read_byte(self.registers.sp().wrapping_add(1)));
+        memory.write_byte(self.registers.sp().wrapping_add(1), temp);
         
         let temp = self.registers.l();
         self.registers.set_l(memory.read_byte(self.registers.sp()));
@@ -1902,7 +1902,7 @@ impl Intel8080 {
     fn shld(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
         memory.write_byte(self.registers.pair_w(), self.registers.l());
-        memory.write_byte(self.registers.pair_w() + 1, self.registers.h());
+        memory.write_byte(self.registers.pair_w().wrapping_add(1), self.registers.h());
         16
     }
 
@@ -1910,7 +1910,7 @@ impl Intel8080 {
     fn lhld(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
         self.registers.set_l(memory.read_byte(self.registers.pair_w()));
-        self.registers.set_h(memory.read_byte(self.registers.pair_w() + 1));
+        self.registers.set_h(memory.read_byte(self.registers.pair_w().wrapping_add(1)));
         15
     }
 
@@ -1954,11 +1954,11 @@ impl Intel8080 {
             let lo_addr = (self.registers.pc() & 0xFF) as u8;
             
             memory.write_byte(self.registers.sp(), lo_addr);
-            memory.write_byte(self.registers.sp() - 1, hi_addr);
+            memory.write_byte(self.registers.sp().wrapping_sub(1), hi_addr);
             
             self.registers.set_pc(self.registers.pair_w());
             
-            self.registers.set_sp(self.registers.sp() - 2);
+            self.registers.set_sp(self.registers.sp().wrapping_sub(2));
             return 17;
         }
         return 11
@@ -1967,10 +1967,10 @@ impl Intel8080 {
     // Return
     fn ret(&mut self, condition: u8, memory: &mut impl MemoryAccess) -> u64 {
         if true {
-            let hi_addr = memory.read_byte(self.registers.sp() + 1);
-            let lo_addr = memory.read_byte(self.registers.sp() + 2);
+            let hi_addr = memory.read_byte(self.registers.sp().wrapping_add(1));
+            let lo_addr = memory.read_byte(self.registers.sp().wrapping_add(2));
             
-            self.registers.set_sp(self.registers.sp() + 2);
+            self.registers.set_sp(self.registers.sp().wrapping_add(2));
             
             let new_pc: u16 = make_u16(hi_addr, lo_addr);
             self.registers.set_pc(new_pc);
@@ -1984,9 +1984,9 @@ impl Intel8080 {
         let lo_addr = (self.registers.pc() & 0xFF) as u8;
         
         memory.write_byte(self.registers.sp(), lo_addr);
-        memory.write_byte(self.registers.sp() - 1, hi_addr);
+        memory.write_byte(self.registers.sp().wrapping_sub(1), hi_addr);
         
-        self.registers.set_sp(self.registers.sp() - 2);
+        self.registers.set_sp(self.registers.sp().wrapping_sub(2));
         
         self.registers.set_pc((exp as u16) << 3);
         11
