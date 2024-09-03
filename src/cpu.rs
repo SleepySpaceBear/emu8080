@@ -3,7 +3,7 @@ use std::usize;
 use crate::memory::MemoryAccess as MemoryAccess;
 
 // 2 MHz
-pub const CYCLE_TIME_SECS: f64 = 0.000_000_5;
+pub const CYCLE_TIME_SECS: f64 = 0.000_000_005;
 pub const CYCLE_TIME_NANO_SECS: u64 = 500;
 
 #[allow(non_camel_case_types)]
