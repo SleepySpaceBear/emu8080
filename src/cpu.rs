@@ -1117,7 +1117,11 @@ impl Intel8080 {
         self.output_ready = false;
         
         if !self.stopped {
-            let instruction = self.fetch_instruction(memory);
+            
+            let instruction = match self.interrupt_instruction.take() {
+                Some(instruction) => instruction,
+                None => self.fetch_instruction(memory)
+            };
             return self.do_instruction(instruction, memory)
         }
         else {
@@ -1133,14 +1137,8 @@ impl Intel8080 {
     }
 
     fn fetch_instruction(&mut self, memory: &impl MemoryAccess) -> Instruction {
-        let instruction = match self.interrupt_instruction.take() {
-            Some(x) => x,
-            None => { self.registers.set_pc(self.registers.pc().wrapping_add(1));
-                        Instruction::from(memory.read_byte(self.registers.pc().wrapping_sub(1)))
-            }
-        };
-
-        return instruction
+        self.registers.set_pc(self.registers.pc().wrapping_add(1));
+        Instruction::from(memory.read_byte(self.registers.pc().wrapping_sub(1)))
     }
 
     fn do_instruction(&mut self, instruction: Instruction, memory: &mut impl MemoryAccess) -> u64 {
