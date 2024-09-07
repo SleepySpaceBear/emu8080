@@ -1,4 +1,4 @@
-use std::usize;
+use std::fmt;
 
 use crate::memory::MemoryAccess as MemoryAccess;
 
@@ -1003,6 +1003,13 @@ impl Registers {
     }
 }
 
+impl fmt::Debug for Registers {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Registers [B,C: {:02X}, {:02X}; D,E: {:02X}, {:02X}; H,L: {:02X}, {:02X}; PSW: {:02X}, {:02X}; PC: {:04X}; SP: {:04X}]",
+            self.b, self.c, self.d, self.e, self.h, self.l, self.accumulator, self.status, self.pc, self.sp)
+    }
+}
+
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
@@ -1056,6 +1063,7 @@ impl From<u8> for Operand16 {
     }
 }
 
+#[derive(Debug)]
 pub struct Intel8080 {
     registers: Registers,
     interrupt_instruction: Option<Instruction>,
