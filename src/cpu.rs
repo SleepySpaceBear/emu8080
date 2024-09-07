@@ -1141,6 +1141,12 @@ impl Intel8080 {
         Instruction::from(memory.read_byte(self.registers.pc().wrapping_sub(1)))
     }
 
+    fn fetch_immediate(&mut self, memory: &impl MemoryAccess) -> u8 {
+        self.registers.set_pc(self.registers.pc().wrapping_add(1));
+        memory.read_byte(self.registers.pc().wrapping_sub(1))
+    }
+
+
     fn do_instruction(&mut self, instruction: Instruction, memory: &mut impl MemoryAccess) -> u64 {
         let mut cycles = 4;
 
@@ -1341,16 +1347,16 @@ impl Intel8080 {
     }
 
     fn load_imm(&mut self, memory: &impl MemoryAccess) {
-        let val = self.fetch_instruction(memory) as u8;
+        let val = self.fetch_immediate(memory) as u8;
         self.registers.set_z(val);
     }
 
     fn load_imm16(&mut self, memory: &impl MemoryAccess) {
-        let val = self.fetch_instruction(memory) as u8;
-        self.registers.set_z(val);
+        let z = self.fetch_immediate(memory);
+        self.registers.set_z(z);
 
-        let val = self.fetch_instruction(memory) as u8;
-        self.registers.set_w(val);
+        let w = self.fetch_immediate(memory) as u8;
+        self.registers.set_w(w);
     }
 
     fn get_src(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u8 {
