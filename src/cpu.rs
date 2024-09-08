@@ -1436,7 +1436,7 @@ impl Intel8080 {
         let val = val.wrapping_add(1);
         self.write_dst(reg, val, memory);
         self.set_condition(val);
-        self.registers.set_status_aux_carry(val & 0x0F == 0);
+        self.registers.set_status_aux_carry(val & 0x0F == 0x0F);
 
         if reg == Operand8::Memory {
             return 10
@@ -1485,8 +1485,8 @@ impl Intel8080 {
 
         self.registers.set_accumulator(val);
         self.set_condition(val);
-        self.registers.set_status_carry(carry && ((val & 0xF0) < 0xF0));
-        self.registers.set_status_aux_carry(aux_carry && ((val & 0x0F) < 0x0F));
+        self.registers.set_status_carry(carry);
+        self.registers.set_status_aux_carry(aux_carry);
         4
     }
 
@@ -1627,6 +1627,7 @@ impl Intel8080 {
         let val: u8 = self.registers.accumulator() & self.get_src(src, memory);
         self.set_condition(val);
         self.registers.set_status_carry(false);
+        self.registers.set_status_aux_carry(false);
         self.registers.set_accumulator(val);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
