@@ -1136,6 +1136,10 @@ impl Intel8080 {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.registers.set_pc(0);
+    }
+
     fn fetch_instruction(&mut self, memory: &impl MemoryAccess) -> Instruction {
         self.registers.set_pc(self.registers.pc().wrapping_add(1));
         Instruction::from(memory.read_byte(self.registers.pc().wrapping_sub(1)))
