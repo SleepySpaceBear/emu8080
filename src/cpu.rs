@@ -1473,7 +1473,7 @@ impl Intel8080 {
     fn daa(&mut self) -> u64 {
         let mut val: u8 = self.registers.accumulator();
         
-        let aux_carry = val & 0xF > 0x9;
+        let aux_carry = val & 0x0F > 0x09;
         if aux_carry || self.registers.status_aux_carry() {
             val = val.wrapping_add(0x6);
         }
@@ -1485,8 +1485,8 @@ impl Intel8080 {
 
         self.registers.set_accumulator(val);
         self.set_condition(val);
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
+        self.registers.set_status_carry(carry && ((val & 0xF0) < 0xF0));
+        self.registers.set_status_aux_carry(aux_carry && ((val & 0x0F) < 0x0F));
         4
     }
 
@@ -1642,6 +1642,7 @@ impl Intel8080 {
         let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
         self.set_condition(val);
         self.registers.set_status_carry(false);
+        self.registers.set_status_aux_carry(false);
         self.registers.set_accumulator(val);
         
         if (src == Operand8::Memory) || (src == Operand8::Immediate) {
