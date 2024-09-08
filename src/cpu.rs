@@ -1436,7 +1436,6 @@ impl Intel8080 {
         let val = val.wrapping_add(1);
         self.write_dst(reg, val, memory);
         self.set_condition(val);
-        self.registers.set_status_carry(val == 0);
         self.registers.set_status_aux_carry(val & 0x0F == 0);
 
         if reg == Operand8::Memory {
@@ -1456,7 +1455,6 @@ impl Intel8080 {
         let new_val = orig_val.wrapping_add(0xFF);
         self.write_dst(reg, new_val, memory);
         self.set_condition(new_val);
-        self.registers.set_status_carry(orig_val != 255);
         self.registers.set_status_aux_carry(orig_val & 0xF != 0);
 
         if reg == Operand8::Memory {
