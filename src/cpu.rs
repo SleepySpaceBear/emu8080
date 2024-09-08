@@ -1104,7 +1104,7 @@ impl Intel8080 {
             stopped: false,
             output_ready: false,
             awaiting_input: false,
-            inte: false,
+            inte: true,
         }
     }
     
