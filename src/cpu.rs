@@ -1118,7 +1118,7 @@ impl Intel8080 {
             stopped: false,
             output_ready: false,
             awaiting_input: false,
-            inte: true,
+            inte: false,
         }
     }
     
@@ -1437,7 +1437,7 @@ impl Intel8080 {
         let z = self.fetch_immediate(memory);
         self.registers.set_z(z);
 
-        let w = self.fetch_immediate(memory) as u8;
+        let w = self.fetch_immediate(memory);
         self.registers.set_w(w);
     }
 
@@ -1628,8 +1628,6 @@ impl Intel8080 {
 
     // ADD Register or Memory to Accumulator With Carry
     fn adc(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
-        let src = Operand8::from(src);
-        
         let old_val: u8 = self.registers.accumulator();
         let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory))
             .wrapping_add(self.registers.status_carry() as u8); 
@@ -1650,10 +1648,8 @@ impl Intel8080 {
 
     // Subtract Register or Memory From Accumulator
     fn sub(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
-        let src = Operand8::from(src);
-
         let old_val = self.registers.accumulator();
-        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
+        let new_val = old_val.wrapping_sub(self.get_src(src, memory));
 
         let carry: bool = !check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
@@ -1671,12 +1667,9 @@ impl Intel8080 {
 
     // Subtract Register or Memory From Accumulator With Borrow
     fn sbb(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
-        let src = Operand8::from(src); 
-
         let old_val = self.registers.accumulator();
-        let new_val = twos_complement(self.get_src(src, memory)
-            .wrapping_add(self.registers.status_carry() as u8));
-        let new_val = old_val.wrapping_add(new_val);
+        let new_val = old_val.wrapping_sub(self.get_src(src, memory))
+                             .wrapping_sub(self.registers.status_carry() as u8);
 
         let carry: bool = !check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
@@ -1710,8 +1703,6 @@ impl Intel8080 {
 
     // Logical Exclusive-Or Register or Memory with Accumulator
     fn xra(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
-        let src = Operand8::from(src); 
-
         let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
         self.set_condition(val);
         self.registers.set_status_carry(false);
@@ -1726,8 +1717,6 @@ impl Intel8080 {
 
     // Logical or Register or Memory with Accumulator
     fn ora(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
-        let src = Operand8::from(src);
-
         let val: u8 = self.registers.accumulator() | self.get_src(src, memory);
         self.set_condition(val);
         self.registers.set_status_carry(false);
@@ -1741,8 +1730,6 @@ impl Intel8080 {
 
     // Compare Register or Memory with Accumulator
     fn cmp(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
-        let src = Operand8::from(src);
-
         let old_val = self.registers.accumulator();
         let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
 
@@ -1762,7 +1749,7 @@ impl Intel8080 {
     // Rotate Accumulator Left
     fn rlc(&mut self) -> u64 {
         let val: u8 = self.registers.accumulator();
-        
+
         // check left-most bit
         if val & 0x80 != 0 {
             self.registers.set_status_carry(true);        
@@ -1770,10 +1757,10 @@ impl Intel8080 {
         else {
             self.registers.set_status_carry(false);
         }
-       
+
         // shift left and set right-most bit to the previous left-most bit
-        let val: u8 = (val << 1) | if self.registers.status_carry() {1} else {0};
-        
+        let val: u8 = val.rotate_left(1);
+
         self.registers.set_accumulator(val);
         4
     }
@@ -1781,7 +1768,7 @@ impl Intel8080 {
     // Rotate Accumulator Right
     fn rrc(&mut self) -> u64 {
         let val: u8 = self.registers.accumulator();
-        
+
         // check right-most bit
         if val & 0x01 != 0 {
             self.registers.set_status_carry(true);        
@@ -1789,10 +1776,10 @@ impl Intel8080 {
         else {
             self.registers.set_status_carry(false);
         }
-       
+
         // shift right and set left-most bit to the previous right-most bit
-        let val: u8 = (val >> 1) | if self.registers.status_carry() {0x80} else {0};
-        
+        let val: u8 = val.rotate_right(1);
+
         self.registers.set_accumulator(val);
         4
     }
@@ -1804,10 +1791,10 @@ impl Intel8080 {
 
         // set carry to left-most bit
         self.registers.set_status_carry(val & 0x80 != 0);        
-       
+
         // shift left and set right-most bit to the previous left-most bit
         let val: u8 = (val << 1) | (if old_carry {1} else {0});
-        
+
         self.registers.set_accumulator(val);
         4
     }
@@ -1819,10 +1806,10 @@ impl Intel8080 {
 
         // set carry to right most bit
         self.registers.set_status_carry(val & 0x01 != 0);        
-       
+
         // shift right and set left-most bit to the old carry bit value
         let val: u8 = (val >> 1) | (if old_carry {0x80} else {0});
-        
+
         self.registers.set_accumulator(val);
         4
     }
@@ -2011,10 +1998,10 @@ impl Intel8080 {
             
             memory.write_byte(self.registers.sp(), lo_addr);
             memory.write_byte(self.registers.sp().wrapping_sub(1), hi_addr);
+            self.registers.set_sp(self.registers.sp().wrapping_sub(2));
             
             self.registers.set_pc(self.registers.pair_w());
             
-            self.registers.set_sp(self.registers.sp().wrapping_sub(2));
             return 17;
         }
         return 11
@@ -2023,13 +2010,13 @@ impl Intel8080 {
     // Return
     fn ret(&mut self, condition: ConditionCode, memory: &mut impl MemoryAccess) -> u64 {
         if self.check_condition(condition) {
-            let hi_addr = memory.read_byte(self.registers.sp().wrapping_add(1));
-            let lo_addr = memory.read_byte(self.registers.sp().wrapping_add(2));
-            
             self.registers.set_sp(self.registers.sp().wrapping_add(2));
+            let hi_addr = memory.read_byte(self.registers.sp().wrapping_sub(1));
+            let lo_addr = memory.read_byte(self.registers.sp());
             
             let new_pc: u16 = make_u16(hi_addr, lo_addr);
             self.registers.set_pc(new_pc);
+            
             return if condition == ConditionCode::Unconditional {10} else {11};
         }
         return 5;
@@ -2040,7 +2027,6 @@ impl Intel8080 {
         
         memory.write_byte(self.registers.sp(), lo_addr);
         memory.write_byte(self.registers.sp().wrapping_sub(1), hi_addr);
-        
         self.registers.set_sp(self.registers.sp().wrapping_sub(2));
         
         self.registers.set_pc((exp as u16) << 3);
@@ -2098,10 +2084,7 @@ fn check_aux_carry(old_val: u8, new_val: u8) -> bool {
 }
 
 fn parity_even(val: u8) -> bool {
-    let val: u8 = (0x0F & val) ^ (val >> 4);
-    let val: u8 = (0x03 & val) ^ (val >> 2);
-    let val: u8 = (0x01 & val) ^ (val >> 1);
-    return val == 0;
+    return val.count_ones() % 2 == 0;
 }
 
 fn twos_complement(val: u8) -> u8 {
@@ -2211,31 +2194,42 @@ mod tests {
     fn test_stax() {
         let mut memory: Memory<200> = Memory::new();
         memory.write_byte(0, Instruction::STAX_B as u8);
+        memory.write_byte(1, Instruction::STAX_D as u8);
         
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
         cpu.registers.set_accumulator(0x69);
         cpu.registers.set_pair_b(56);
+        cpu.registers.set_pair_d(57);
 
         cpu.step(&mut memory);
-
         assert_eq!(cpu.registers.accumulator(), memory.read_byte(56));
+
+        cpu.step(&mut memory);
+        assert_eq!(cpu.registers.accumulator(), memory.read_byte(57));
     }
 
     #[test]
     fn test_ldax() {
         let mut memory: Memory<200> = Memory::new();
         memory.write_byte(0, Instruction::LDAX_D as u8);
+        memory.write_byte(1, Instruction::LDAX_B as u8);
+        memory.write_byte(150, 0x19);
         memory.write_byte(176, 0x35);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0);
         cpu.registers.set_accumulator(0x50);
         cpu.registers.set_pair_d(176);
+        cpu.registers.set_pair_b(150);
 
         cpu.step(&mut memory);
-
         assert_eq!(cpu.registers.accumulator(), memory.read_byte(176));
+        assert_eq!(cpu.registers.accumulator(), 0x35);
+
+        cpu.step(&mut memory);
+        assert_eq!(cpu.registers.accumulator(), memory.read_byte(150));
+        assert_eq!(cpu.registers.accumulator(), 0x19);
     }
 
     #[test]
