@@ -789,7 +789,7 @@ impl Registers {
             h: 0,
             l: 0,
             accumulator: 0,
-            status: 0x2,
+            status: 0b0000_0010,
             w: 0,
             z: 0
         }
@@ -913,7 +913,7 @@ impl Registers {
     }
 
     fn set_status(&mut self, val: u8) {
-        self.status = 0x2 | (val & 0xC5);
+        self.status = 0b0000_0010 | (val & 0b1101_0111);
     }
 
     fn status_carry(&self) -> bool {
@@ -1004,8 +1004,10 @@ impl Registers {
 
 impl fmt::Debug for Registers {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Registers [B,C: {:02X}, {:02X}; D,E: {:02X}, {:02X}; H,L: {:02X}, {:02X}; PSW: {:02X}, {:02X}; PC: {:04X}; SP: {:04X}]",
-            self.b, self.c, self.d, self.e, self.h, self.l, self.accumulator, self.status, self.pc, self.sp)
+        write!(f, "Registers [B,C: {:02X}, {:02X}; D,E: {:02X}, {:02X};
+                   H,L: {:02X}, {:02X}; PSW: {:02X}, {:02X}; PC: {:04X}; SP: {:04X}]",
+            self.b, self.c, self.d, self.e, 
+            self.h, self.l, self.accumulator, self.status, self.pc, self.sp)
     }
 }
 
