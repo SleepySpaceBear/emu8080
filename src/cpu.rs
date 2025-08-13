@@ -499,26 +499,12 @@ pub enum Instruction {
     OUT = 0xd3,
     // Halt
     HLT = 0x76,
-    // No Operation
-    NOP_10 = 0x10,
-    // No Operation
-    NOP_20 = 0x20,
-    // No Operation
-    NOP_30 = 0x30,
-    // No Operation
-    NOP_08 = 0x08,
-    // No Operation
-    NOP_18 = 0x18, 
-    // No Operation
-    NOP_28 = 0x28,
-    // No Operation
-    NOP_38 = 0x38
 }
 
 impl From<u8> for Instruction {
     fn from(orig: u8) -> Self {
         return match orig {
-            0x0 => Instruction::NOP,
+            0x00 | 0x10 | 0x20 | 0x30 | 0x08 | 0x18 | 0x28 | 0x38 => Instruction::NOP,
             0x37 => Instruction::STC,
             0x3f => Instruction::CMC,
             0x4 => Instruction::INR_B,
@@ -722,7 +708,7 @@ impl From<u8> for Instruction {
             0x22 => Instruction::SHLD,
             0x2a => Instruction::LHLD,
             0xe9 => Instruction::PCHL,
-            0xc3 => Instruction::JMP,
+            0xc3 | 0xcb => Instruction::JMP,
             0xda => Instruction::JC,
             0xd2 => Instruction::JNC,
             0xca => Instruction::JZ,
@@ -731,7 +717,7 @@ impl From<u8> for Instruction {
             0xf2 => Instruction::JP,
             0xea => Instruction::JPE,
             0xe2 => Instruction::JPO,
-            0xcd => Instruction::CALL,
+            0xcd | 0xdd | 0xed | 0xfd => Instruction::CALL,
             0xdc => Instruction::CC,
             0xd4 => Instruction::CNC,
             0xcc => Instruction::CZ,
@@ -740,7 +726,7 @@ impl From<u8> for Instruction {
             0xf4 => Instruction::CP,
             0xec => Instruction::CPE,
             0xe4 => Instruction::CPO,
-            0xc9 => Instruction::RET,
+            0xc9 | 0xd9 => Instruction::RET,
             0xd8 => Instruction::RC,
             0xd0 => Instruction::RNC,
             0xc8 => Instruction::RZ,
@@ -761,15 +747,7 @@ impl From<u8> for Instruction {
             0xf3 => Instruction::DI,
             0xdb => Instruction::IN,
             0xd3 => Instruction::OUT,
-            0x76 => Instruction::HLT,
-            0x10 => Instruction::NOP_10,
-            0x20 => Instruction::NOP_20,
-            0x30 => Instruction::NOP_30,
-            0x08 => Instruction::NOP_08,
-            0x18 => Instruction::NOP_18,
-            0x28 => Instruction::NOP_28,
-            0x38 => Instruction::NOP_38,
-            _ => Instruction::NOP
+            0x76 => Instruction::HLT
         }
     }
 }
@@ -2091,8 +2069,9 @@ fn twos_complement(val: u8) -> u8 {
     return (!val).wrapping_add(1)
 }
 
+#[inline(always)]
 fn make_u16(higher_order: u8, lower_order: u8) -> u16 {
-    return ((higher_order as u16) << 8) | (lower_order as u16)
+    u16::from_be_bytes([higher_order, lower_order])
 }
 
 // END UTILITY FUNCTIONS
