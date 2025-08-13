@@ -755,11 +755,11 @@ impl From<u8> for Instruction {
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u8)]
 enum StatusFlags {
-    SignBit = 0x80,
-    ZeroBit = 0x40,
-    AuxCarryBit = 0x10,
-    ParityBit = 0x04,
-    CarryBit = 0x01
+    SignBit     = 0b1000_0000,
+    ZeroBit     = 0b0100_0000,
+    AuxCarryBit = 0b0001_0000,
+    ParityBit   = 0b0000_0100,
+    CarryBit    = 0b0000_0001
 }
 
 struct Registers {
