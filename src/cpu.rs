@@ -818,8 +818,9 @@ impl Registers {
     }
 
     fn set_pair_b(&mut self, val: u16) {
-       self.b = ((val >> 8) & 0xFF) as u8;
-       self.c = (val & 0xFF) as u8
+        let bytes = val.to_le_bytes();
+        self.b = bytes[1];
+        self.c = bytes[0];
     }
 
     fn b(&self) -> u8 {
@@ -844,8 +845,9 @@ impl Registers {
     }
 
     fn set_pair_d(&mut self, val: u16) {
-       self.d = ((val >> 8) & 0xFF) as u8;
-       self.e = (val & 0xFF) as u8
+        let bytes = val.to_le_bytes();
+        self.d = bytes[1];
+        self.e = bytes[0];
     }
 
     fn d(&self) -> u8 {
@@ -870,8 +872,9 @@ impl Registers {
     }
 
     fn set_pair_h(&mut self, val: u16) {
-       self.h = ((val >> 8) & 0xFF) as u8;
-       self.l = (val & 0xFF) as u8
+        let bytes = val.to_le_bytes();
+        self.h = bytes[1];
+        self.l = bytes[0];
     } 
 
     fn h(&self) -> u8 {
@@ -896,8 +899,9 @@ impl Registers {
     }
 
     fn set_psw(&mut self, val: u16) {
-        self.accumulator = ((val >> 8) & 0xFF) as u8;
-        self.set_status((val & 0xFF) as u8);
+        let bytes = val.to_le_bytes();
+        self.accumulator = bytes[1] as u8;
+        self.set_status(bytes[0]);
     }
 
     fn accumulator(&self) -> u8 {
