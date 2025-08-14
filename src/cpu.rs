@@ -1,5 +1,7 @@
 use std::fmt;
 
+use log::{debug, warn, error};
+
 use crate::memory::MemoryAccess as MemoryAccess;
 
 // 2 MHz
@@ -1150,6 +1152,7 @@ impl Intel8080 {
 
     pub fn interrupt(&mut self, instruction: Instruction) {
         if self.inte {
+            debug!("Interrupt {instruction:?}");
             self.interrupt_instruction = Some(instruction);
             self.stopped = false;
         }
@@ -1171,6 +1174,7 @@ impl Intel8080 {
 
 
     fn do_instruction(&mut self, instruction: Instruction, memory: &mut impl MemoryAccess) -> u64 {
+        debug!("Performing {instruction:?}");
         return match instruction {
             Instruction::STC => { self.stc() },
             Instruction::CMC => { self.cmc() },
@@ -1968,16 +1972,24 @@ impl Intel8080 {
         return 10
     }
 
+    fn push_pc(&mut self, memory: &mut impl MemoryAccess) {
+        self.registers.set_sp(self.registers.sp().wrapping_sub(2));
+        memory.write_bytes(self.registers.sp(), &self.registers.pc().to_le_bytes());
+    }
+
+    fn pop_pc(&mut self, memory: &mut impl MemoryAccess) {
+        let pc = memory.read_bytes(self.registers.sp(), 2);
+        let pc = u16::from_le_bytes(pc.try_into().unwrap());
+        self.registers.set_sp(self.registers.sp().wrapping_add(2));
+        self.registers.set_pc(pc);
+    }
+
     // Call
     fn call(&mut self, condition: ConditionCode, memory: &mut impl MemoryAccess) -> u64 {
         self.load_imm16(memory);
 
         if self.check_condition(condition) {
-            let bytes = self.registers.pc().to_le_bytes(); 
-            memory.write_byte(self.registers.sp().wrapping_sub(2), bytes[0]);
-            memory.write_byte(self.registers.sp().wrapping_sub(1), bytes[1]);
-            self.registers.set_sp(self.registers.sp().wrapping_sub(2));
-            
+            self.push_pc(memory);
             self.registers.set_pc(self.registers.pair_w());
             
             return 17;
@@ -1988,25 +2000,15 @@ impl Intel8080 {
     // Return
     fn ret(&mut self, condition: ConditionCode, memory: &mut impl MemoryAccess) -> u64 {
         if self.check_condition(condition) {
-            let lo_addr = memory.read_byte(self.registers.sp());
-            let hi_addr = memory.read_byte(self.registers.sp().wrapping_add(1));
-            self.registers.set_sp(self.registers.sp().wrapping_add(2));
-            
-            let new_pc: u16 = make_u16(hi_addr, lo_addr);
-            self.registers.set_pc(new_pc);
-            
+            self.pop_pc(memory);
             return if condition == ConditionCode::Unconditional {10} else {11};
         }
         return 5;
     }
 
+    // Reset
     fn rst(&mut self, exp: u8, memory: &mut impl MemoryAccess) -> u64 {
-        let bytes = self.registers.pc().to_le_bytes();
-        
-        memory.write_byte(self.registers.sp(), bytes[0]);
-        memory.write_byte(self.registers.sp().wrapping_sub(1), bytes[1]);
-        self.registers.set_sp(self.registers.sp().wrapping_sub(2));
-        
+        self.push_pc(memory);
         self.registers.set_pc((exp as u16) << 3);
         11
     }
@@ -2928,8 +2930,8 @@ mod tests {
         assert_eq!(cycles, 11);
         assert_eq!(cpu.registers.sp(), 0x0E);
         assert_eq!(cpu.registers.pc(), 0x08);
+        assert_eq!(memory.read_byte(0x0E), 0x01);
         assert_eq!(memory.read_byte(0x0F), 0x00);
-        assert_eq!(memory.read_byte(0x10), 0x01);
     }
 
     #[test]
