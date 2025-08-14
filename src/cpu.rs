@@ -769,7 +769,7 @@ union RegisterPair {
     regs: (u8, u8)
 }
 
-struct Registers {
+pub struct Registers {
     pc: u16, // Program Counter
     sp: u16, // Stack Pointer
     bc: RegisterPair,
@@ -792,7 +792,7 @@ impl Registers {
         }
     }
 
-    fn pc(&self) -> u16 {
+    pub fn pc(&self) -> u16 {
         self.pc
     }
 
@@ -801,7 +801,7 @@ impl Registers {
     }
 
 
-    fn sp(&self) -> u16 {
+    pub fn sp(&self) -> u16 {
         self.sp
     }
 
@@ -810,7 +810,7 @@ impl Registers {
     }
 
 
-    fn pair_b(&self) -> u16 {
+    pub fn pair_b(&self) -> u16 {
         unsafe { self.bc.pair } 
     }
 
@@ -818,7 +818,7 @@ impl Registers {
         self.bc.pair = val
     }
 
-    fn b(&self) -> u8 {
+    pub fn b(&self) -> u8 {
         unsafe { self.bc.regs.1 }
     }
 
@@ -826,7 +826,7 @@ impl Registers {
         self.bc.regs.1 = val;
     }
 
-    fn c(&self) -> u8 {
+    pub fn c(&self) -> u8 {
         unsafe { self.bc.regs.0 }
     }
 
@@ -835,7 +835,7 @@ impl Registers {
     }
 
 
-    fn pair_d(&self) -> u16 {
+    pub fn pair_d(&self) -> u16 {
         unsafe { self.de.pair }
     }
 
@@ -843,7 +843,7 @@ impl Registers {
         self.de.pair = val;
     }
 
-    fn d(&self) -> u8 {
+    pub fn d(&self) -> u8 {
         unsafe { self.de.regs.1 }
     }
 
@@ -851,7 +851,7 @@ impl Registers {
         self.de.regs.1 = val;
     }
 
-    fn e(&self) -> u8 {
+    pub fn e(&self) -> u8 {
         unsafe { self.de.regs.0 }
     }
 
@@ -860,7 +860,7 @@ impl Registers {
     }
 
 
-    fn pair_h(&self) -> u16 {
+    pub fn pair_h(&self) -> u16 {
         unsafe { self.hl.pair }
     }
 
@@ -868,7 +868,7 @@ impl Registers {
         self.hl.pair = val;
     } 
 
-    fn h(&self) -> u8 {
+    pub fn h(&self) -> u8 {
         unsafe { self.hl.regs.1 }
     }
 
@@ -876,7 +876,7 @@ impl Registers {
         self.hl.regs.1 = val
     }
 
-    fn l(&self) -> u8 {
+    pub fn l(&self) -> u8 {
         unsafe { self.hl.regs.0 }
     }
 
@@ -885,7 +885,7 @@ impl Registers {
     }
 
 
-    fn psw(&self) -> u16 {
+    pub fn psw(&self) -> u16 {
         unsafe { self.psw.pair }
     }
 
@@ -895,7 +895,7 @@ impl Registers {
         self.set_status_byte(bytes[0]);
     }
 
-    fn accumulator(&self) -> u8 {
+    pub fn accumulator(&self) -> u8 {
         unsafe { self.psw.regs.1 }
     }
 
@@ -903,7 +903,7 @@ impl Registers {
         self.psw.regs.1 = val;
     }
 
-    fn status(&self) -> u8 {
+    pub fn status(&self) -> u8 {
         unsafe { self.psw.regs.0 }
     }
 
@@ -965,7 +965,7 @@ impl Registers {
         }
     }
 
-    fn status_carry(&self) -> bool {
+    pub fn status_carry(&self) -> bool {
         unsafe { (self.psw.regs.0 & (StatusFlags::CarryBit as u8)) != 0 }
     }
 
@@ -978,7 +978,7 @@ impl Registers {
         }
     }
     
-    fn status_aux_carry(&self) -> bool {
+    pub fn status_aux_carry(&self) -> bool {
         unsafe { (self.psw.regs.0 & (StatusFlags::AuxCarryBit as u8)) != 0 }
     }
 
@@ -991,7 +991,7 @@ impl Registers {
         }
     }
 
-    fn status_zero(&self) -> bool {
+    pub fn status_zero(&self) -> bool {
         unsafe { (self.psw.regs.0 & StatusFlags::ZeroBit as u8) != 0 }
     }
 
@@ -1004,7 +1004,7 @@ impl Registers {
         }
     }
     
-    fn status_parity(&self) -> bool {
+    pub fn status_parity(&self) -> bool {
         unsafe { (self.psw.regs.0 & (StatusFlags::ParityBit as u8)) != 0 }
     }
 
@@ -1017,7 +1017,7 @@ impl Registers {
         }
     }
     
-    fn status_sign(&self) -> bool {
+    pub fn status_sign(&self) -> bool {
         unsafe { (self.psw.regs.0 & (StatusFlags::SignBit as u8)) != 0 }
     }
 
@@ -1030,7 +1030,7 @@ impl Registers {
         }
     }
 
-    fn w(&self) -> u8 {
+    pub fn w(&self) -> u8 {
        unsafe { self.wz.regs.1 }
     }
 
@@ -1046,7 +1046,7 @@ impl Registers {
         self.wz.regs.0 = val
     }
 
-    fn pair_w(&self) -> u16 {
+    pub fn pair_w(&self) -> u16 {
         unsafe { self.wz.pair }
     }
 }
@@ -1202,6 +1202,10 @@ impl Intel8080 {
 
     pub fn reset(&mut self) {
         self.registers.set_pc(0);
+    }
+
+    pub fn registers(&self) -> &Registers {
+        &self.registers
     }
 
     fn fetch_instruction(&mut self, memory: &impl MemoryAccess) -> Instruction {
