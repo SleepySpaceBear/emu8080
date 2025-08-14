@@ -917,6 +917,7 @@ impl Registers {
     }
 
     fn set_status(&mut self, val: u8) {
+        // bit 1 is always 1 and bits 3 and 5 are always 0
         self.status = 0b0000_0010 | (val & 0b1101_0111);
     }
 
@@ -1136,7 +1137,6 @@ impl Intel8080 {
         self.output_ready = false;
         
         if !self.stopped {
-            
             let instruction = match self.interrupt_instruction.take() {
                 Some(instruction) => instruction,
                 None => self.fetch_instruction(memory)
@@ -1403,8 +1403,8 @@ impl Intel8080 {
             Instruction::RST_6 => { self.rst(5, memory) },
             Instruction::RST_7 => { self.rst(6, memory) },
             Instruction::RST_8 => { self.rst(7, memory) },
-            Instruction::EI => { self.ei(); 4 },
-            Instruction::DI => { self.di(); 4 },
+            Instruction::EI => { self.ei() },
+            Instruction::DI => { self.di() },
             Instruction::IN => { self.input(memory) },
             Instruction::OUT => { self.output(memory) },
             Instruction::HLT => { self.hlt() },
@@ -1507,12 +1507,8 @@ impl Intel8080 {
 
     // Decrement Register or Memory
     fn dcr(&mut self, reg: Operand8, memory: &mut impl MemoryAccess) -> u64 {
-        // Note: This is equivalent in Intel8080 to adding 0xFF to the value
-        // due to the usage of 2s complement representation. Carry bits will be 
-        // set accordingly.
-
         let orig_val = self.get_src(reg, memory);
-        let new_val = orig_val.wrapping_add(0xFF);
+        let new_val = orig_val.wrapping_sub(0x1);
         self.write_dst(reg, new_val, memory);
         self.set_condition(new_val);
         self.registers.set_status_aux_carry(orig_val & 0xF != 0);
@@ -1977,11 +1973,9 @@ impl Intel8080 {
         self.load_imm16(memory);
 
         if self.check_condition(condition) {
-            let hi_addr = (self.registers.pc() >> 8) as u8;
-            let lo_addr = (self.registers.pc() & 0xFF) as u8;
-            
-            memory.write_byte(self.registers.sp(), lo_addr);
-            memory.write_byte(self.registers.sp().wrapping_sub(1), hi_addr);
+            let bytes = self.registers.pc().to_le_bytes(); 
+            memory.write_byte(self.registers.sp().wrapping_sub(2), bytes[0]);
+            memory.write_byte(self.registers.sp().wrapping_sub(1), bytes[1]);
             self.registers.set_sp(self.registers.sp().wrapping_sub(2));
             
             self.registers.set_pc(self.registers.pair_w());
@@ -1994,9 +1988,9 @@ impl Intel8080 {
     // Return
     fn ret(&mut self, condition: ConditionCode, memory: &mut impl MemoryAccess) -> u64 {
         if self.check_condition(condition) {
-            self.registers.set_sp(self.registers.sp().wrapping_add(2));
-            let hi_addr = memory.read_byte(self.registers.sp().wrapping_sub(1));
             let lo_addr = memory.read_byte(self.registers.sp());
+            let hi_addr = memory.read_byte(self.registers.sp().wrapping_add(1));
+            self.registers.set_sp(self.registers.sp().wrapping_add(2));
             
             let new_pc: u16 = make_u16(hi_addr, lo_addr);
             self.registers.set_pc(new_pc);
@@ -2005,17 +1999,18 @@ impl Intel8080 {
         }
         return 5;
     }
+
     fn rst(&mut self, exp: u8, memory: &mut impl MemoryAccess) -> u64 {
-        let hi_addr = (self.registers.pc() >> 8) as u8;
-        let lo_addr = (self.registers.pc() & 0xFF) as u8;
+        let bytes = self.registers.pc().to_le_bytes();
         
-        memory.write_byte(self.registers.sp(), lo_addr);
-        memory.write_byte(self.registers.sp().wrapping_sub(1), hi_addr);
+        memory.write_byte(self.registers.sp(), bytes[0]);
+        memory.write_byte(self.registers.sp().wrapping_sub(1), bytes[1]);
         self.registers.set_sp(self.registers.sp().wrapping_sub(2));
         
         self.registers.set_pc((exp as u16) << 3);
         11
     }
+
     // Enable Interrupts
     fn ei(&mut self) -> u64 {
         self.inte = true;
@@ -2895,19 +2890,19 @@ mod tests {
 
         assert_eq!(cpu.registers.pc(), 0x05);
         assert_eq!(cpu.registers.sp(), 0x08);
-        assert_eq!(memory.read_byte( 7), 0xFF);
-        assert_eq!(memory.read_byte( 8), 0xFF);
-        assert_eq!(memory.read_byte( 9), 0x00);
-        assert_eq!(memory.read_byte(10), 0x03);
+        assert_eq!(memory.read_byte(7), 0xFF);
+        assert_eq!(memory.read_byte(8), 0x03);
+        assert_eq!(memory.read_byte(9), 0x00);
+        assert_eq!(memory.read_byte(10), 0xFF);
         assert_eq!(memory.read_byte(11), 0xFF);
     }
 
     #[test]
     fn test_ret() {
         let mut memory: Memory<20> = Memory::new();
-        memory.write_byte( 0, Instruction::RET as u8);
-        memory.write_byte( 9, 0x00);
-        memory.write_byte(10, 0x06);
+        memory.write_byte(0, Instruction::RET as u8);
+        memory.write_byte(8, 0x06);
+        memory.write_byte(9, 0x00);
 
         let mut cpu = Intel8080::new();
         cpu.registers.set_pc(0x00);
