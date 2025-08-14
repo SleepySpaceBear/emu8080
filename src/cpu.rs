@@ -764,19 +764,19 @@ enum StatusFlags {
     CarryBit    = 0b0000_0001
 }
 
+union RegisterPair {
+    pair: u16,
+    regs: (u8, u8)
+}
+
 struct Registers {
     pc: u16, // Program Counter
     sp: u16, // Stack Pointer
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    accumulator: u8,
-    status: u8,
-    w: u8,
-    z: u8
+    bc: RegisterPair,
+    de: RegisterPair,
+    hl: RegisterPair,
+    psw: RegisterPair,
+    wz: RegisterPair
 }
 
 impl Registers {
@@ -784,16 +784,11 @@ impl Registers {
         Self {
             pc: 0,
             sp: 0,
-            b: 0,
-            c: 0,
-            d: 0,
-            e: 0,
-            h: 0,
-            l: 0,
-            accumulator: 0,
-            status: 0b0000_0010,
-            w: 0,
-            z: 0
+            bc: RegisterPair{ pair: 0 },
+            de: RegisterPair{ pair: 0 },
+            hl: RegisterPair{ pair: 0 },
+            psw: RegisterPair{ regs: (0b0000_0010, 0) },
+            wz: RegisterPair{ pair: 0 } 
         }
     }
 
@@ -816,196 +811,243 @@ impl Registers {
 
 
     fn pair_b(&self) -> u16 {
-        make_u16(self.b, self.c)
+        unsafe { self.bc.pair } 
     }
 
     fn set_pair_b(&mut self, val: u16) {
-        let bytes = val.to_le_bytes();
-        self.b = bytes[1];
-        self.c = bytes[0];
+        self.bc.pair = val
     }
 
     fn b(&self) -> u8 {
-        self.b
+        unsafe { self.bc.regs.1 }
     }
 
     fn set_b(&mut self, val: u8) {
-        self.b = val 
+        self.bc.regs.1 = val;
     }
 
     fn c(&self) -> u8 {
-        self.c 
+        unsafe { self.bc.regs.0 }
     }
 
     fn set_c(&mut self, val: u8) {
-        self.c = val 
+        self.bc.regs.0 = val;
     }
 
 
     fn pair_d(&self) -> u16 {
-        make_u16(self.d, self.e)
+        unsafe { self.de.pair }
     }
 
     fn set_pair_d(&mut self, val: u16) {
-        let bytes = val.to_le_bytes();
-        self.d = bytes[1];
-        self.e = bytes[0];
+        self.de.pair = val;
     }
 
     fn d(&self) -> u8 {
-        self.d 
+        unsafe { self.de.regs.1 }
     }
 
     fn set_d(&mut self, val: u8) {
-        self.d = val 
+        self.de.regs.1 = val;
     }
 
     fn e(&self) -> u8 {
-        self.e 
+        unsafe { self.de.regs.0 }
     }
 
     fn set_e(&mut self, val: u8) {
-        self.e = val 
+        self.de.regs.0 = val;
     }
 
 
     fn pair_h(&self) -> u16 {
-        make_u16(self.h, self.l)
+        unsafe { self.hl.pair }
     }
 
     fn set_pair_h(&mut self, val: u16) {
-        let bytes = val.to_le_bytes();
-        self.h = bytes[1];
-        self.l = bytes[0];
+        self.hl.pair = val;
     } 
 
     fn h(&self) -> u8 {
-        self.h 
+        unsafe { self.hl.regs.1 }
     }
 
     fn set_h(&mut self, val: u8) {
-        self.h = val 
+        self.hl.regs.1 = val
     }
 
     fn l(&self) -> u8 {
-        self.l 
+        unsafe { self.hl.regs.0 }
     }
 
     fn set_l(&mut self, val: u8) {
-        self.l = val
+        self.hl.regs.0 = val;
     }
 
 
     fn psw(&self) -> u16 {
-        make_u16(self.accumulator, self.status)
+        unsafe { self.psw.pair }
     }
 
     fn set_psw(&mut self, val: u16) {
         let bytes = val.to_le_bytes();
-        self.accumulator = bytes[1] as u8;
-        self.set_status(bytes[0]);
+        self.psw.regs.1 = bytes[1] as u8;
+        self.set_status_byte(bytes[0]);
     }
 
     fn accumulator(&self) -> u8 {
-        self.accumulator 
+        unsafe { self.psw.regs.1 }
     }
 
     fn set_accumulator(&mut self, val: u8) {
-        self.accumulator = val
+        self.psw.regs.1 = val;
     }
 
     fn status(&self) -> u8 {
-        self.status
+        unsafe { self.psw.regs.0 }
     }
 
-    fn set_status(&mut self, val: u8) {
+    fn set_status_byte(&mut self, val: u8) {
         // bit 1 is always 1 and bits 3 and 5 are always 0
-        self.status = 0b0000_0010 | (val & 0b1101_0111);
+        self.psw.regs.0 = 0b0000_0010 | (val & 0b1101_0111);
+    }
+
+    fn set_status_all(&mut self, 
+        carry: Option<bool>,
+        aux_carry: Option<bool>,
+        zero: Option<bool>,
+        parity: Option<bool>,
+        sign: Option<bool>) {
+        
+        if let Some(bit) = carry {
+            if bit {
+                unsafe { self.psw.regs.0 |= StatusFlags::CarryBit as u8 };
+            }
+            else {
+                unsafe { self.psw.regs.0 &= !(StatusFlags::CarryBit as u8) }
+            }
+        }
+
+        if let Some(bit) = aux_carry {
+            if bit {
+                unsafe { self.psw.regs.0 |= StatusFlags::AuxCarryBit as u8; }
+            }
+            else {
+                unsafe { self.psw.regs.0 &= !(StatusFlags::AuxCarryBit as u8) }
+            }
+        }
+
+        if let Some(bit) = zero {
+            if bit {
+                unsafe { self.psw.regs.0 |= StatusFlags::ZeroBit as u8; }
+            }
+            else {
+                unsafe { self.psw.regs.0 &= !(StatusFlags::ZeroBit as u8) }
+            }
+        }
+        
+        if let Some(bit) = parity {
+            if bit {
+                unsafe { self.psw.regs.0 |= StatusFlags::ParityBit as u8 };
+            }
+            else {
+                unsafe { self.psw.regs.0 &= !(StatusFlags::ParityBit as u8) };
+            }
+        }
+        
+        if let Some(bit) = sign {
+            if bit {
+                unsafe { self.psw.regs.0  |= StatusFlags::SignBit as u8 };
+            }
+            else {
+                unsafe { self.psw.regs.0 &= !(StatusFlags::SignBit as u8) };
+            }
+        }
     }
 
     fn status_carry(&self) -> bool {
-        return (self.status & (StatusFlags::CarryBit as u8)) != 0; 
+        unsafe { (self.psw.regs.0 & (StatusFlags::CarryBit as u8)) != 0 }
     }
 
     fn set_status_carry(&mut self, carry: bool) {
         if carry {
-            self.status |= StatusFlags::CarryBit as u8;
+            unsafe { self.psw.regs.0 |= StatusFlags::CarryBit as u8 };
         }
         else {
-            self.status &= !(StatusFlags::CarryBit as u8);
+            unsafe { self.psw.regs.0 &= !(StatusFlags::CarryBit as u8) }
         }
     }
     
     fn status_aux_carry(&self) -> bool {
-        return (self.status & (StatusFlags::AuxCarryBit as u8)) != 0; 
+        unsafe { (self.psw.regs.0 & (StatusFlags::AuxCarryBit as u8)) != 0 }
     }
 
     fn set_status_aux_carry(&mut self, aux_carry: bool) {
         if aux_carry {
-            self.status |= StatusFlags::AuxCarryBit as u8;
+            unsafe { self.psw.regs.0 |= StatusFlags::AuxCarryBit as u8; }
         }
         else {
-            self.status &= !(StatusFlags::AuxCarryBit as u8);
+            unsafe { self.psw.regs.0 &= !(StatusFlags::AuxCarryBit as u8); }
         }
     }
 
     fn status_zero(&self) -> bool {
-        return (self.status & StatusFlags::ZeroBit as u8) != 0; 
+        unsafe { (self.psw.regs.0 & StatusFlags::ZeroBit as u8) != 0 }
     }
 
     fn set_status_zero(&mut self, zero: bool) {
         if zero {
-            self.status |= StatusFlags::ZeroBit as u8;
+            unsafe { self.psw.regs.0 |= StatusFlags::ZeroBit as u8; }
         }
         else {
-            self.status &= !(StatusFlags::ZeroBit as u8);
+            unsafe { self.psw.regs.0 &= !(StatusFlags::ZeroBit as u8); }
         }
     }
     
     fn status_parity(&self) -> bool {
-        return (self.status & (StatusFlags::ParityBit as u8)) != 0; 
+        unsafe { (self.psw.regs.0 & (StatusFlags::ParityBit as u8)) != 0 }
     }
 
     fn set_status_parity(&mut self, parity: bool) {
         if parity {
-            self.status |= StatusFlags::ParityBit as u8;
+            unsafe { self.psw.regs.0 |= StatusFlags::ParityBit as u8; }
         }
         else {
-            self.status &= !(StatusFlags::ParityBit as u8);
+            unsafe { self.psw.regs.0 &= !(StatusFlags::ParityBit as u8); }
         }
     }
     
     fn status_sign(&self) -> bool {
-        return (self.status & (StatusFlags::SignBit as u8)) != 0; 
+        unsafe { (self.psw.regs.0 & (StatusFlags::SignBit as u8)) != 0 }
     }
 
     fn set_status_sign(&mut self, sign: bool) {
         if sign {
-            self.status |= StatusFlags::SignBit as u8;
+            unsafe { self.psw.regs.0 |= StatusFlags::SignBit as u8; }
         }
         else {
-            self.status &= !(StatusFlags::SignBit as u8);
+            unsafe { self.psw.regs.0 &= !(StatusFlags::SignBit as u8); }
         }
     }
 
     fn w(&self) -> u8 {
-       self.w 
+       unsafe { self.wz.regs.1 }
     }
 
     fn set_w(&mut self, val: u8) {
-        self.w = val;
+        self.wz.regs.1 = val;
     }
     
     pub fn z(&self) -> u8 {
-       self.z 
+       unsafe { self.wz.regs.0 }
     }
 
     fn set_z(&mut self, val: u8) {
-        self.z = val;
+        self.wz.regs.0 = val
     }
 
     fn pair_w(&self) -> u16 {
-       make_u16(self.w(), self.z())
+        unsafe { self.wz.pair }
     }
 }
 
@@ -1013,8 +1055,8 @@ impl fmt::Debug for Registers {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Registers [B,C: {:02X}, {:02X}; D,E: {:02X}, {:02X};
                    H,L: {:02X}, {:02X}; PSW: {:02X}, {:02X}; PC: {:04X}; SP: {:04X}]",
-            self.b, self.c, self.d, self.e, 
-            self.h, self.l, self.accumulator, self.status, self.pc, self.sp)
+            self.b(), self.c(), self.d(), self.e(), 
+            self.h(), self.l(), self.accumulator(), self.status(), self.pc(), self.sp())
     }
 }
 
@@ -1170,6 +1212,14 @@ impl Intel8080 {
     fn fetch_immediate(&mut self, memory: &impl MemoryAccess) -> u8 {
         self.registers.set_pc(self.registers.pc().wrapping_add(1));
         memory.read_byte(self.registers.pc().wrapping_sub(1))
+    }
+
+    fn fetch_immediate16(&mut self, memory: &impl MemoryAccess) -> [u8; 2] {
+        self.registers.set_pc(self.registers.pc().wrapping_add(2));
+        unsafe {
+            memory.read_bytes(self.registers.pc().wrapping_sub(2), 2)
+                .try_into().unwrap_unchecked()
+        }
     }
 
 
@@ -1416,17 +1466,19 @@ impl Intel8080 {
         }
     }
 
-    fn load_imm(&mut self, memory: &impl MemoryAccess) {
+    #[inline(always)]
+    fn load_imm(&mut self, memory: &impl MemoryAccess) -> u8 {
         let val = self.fetch_immediate(memory) as u8;
         self.registers.set_z(val);
+        val
     }
-
-    fn load_imm16(&mut self, memory: &impl MemoryAccess) {
-        let z = self.fetch_immediate(memory);
-        self.registers.set_z(z);
-
-        let w = self.fetch_immediate(memory);
-        self.registers.set_w(w);
+    
+    #[inline(always)]
+    fn load_imm16(&mut self, memory: &impl MemoryAccess) -> u16 {
+        let bytes = self.fetch_immediate16(memory);
+        self.registers.set_z(bytes[0]);
+        self.registers.set_w(bytes[1]);
+        u16::from_le_bytes([bytes[0], bytes[1]])
     }
 
     fn get_src(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u8 {
@@ -1439,7 +1491,7 @@ impl Intel8080 {
             Operand8::RegL => { self.registers.l() },
             Operand8::Memory => { memory.read_byte(self.registers.pair_h()) }
             Operand8::RegA => { self.registers.accumulator() },
-            Operand8::Immediate => { self.load_imm(memory); self.registers.z() }
+            Operand8::Immediate => { self.load_imm(memory) }
         }
     }
 
@@ -1477,10 +1529,15 @@ impl Intel8080 {
         }
     }
 
-    fn set_condition(&mut self, val: u8) {
-        self.registers.set_status_zero(val == 0);
-        self.registers.set_status_sign(val & 0x80 != 0);
-        self.registers.set_status_parity(parity_even(val));
+    #[inline(always)]
+    fn set_condition(&mut self, val: u8, carry: Option<bool>, aux_carry: Option<bool>) {
+        self.registers.set_status_all(
+            carry, 
+            aux_carry,
+            Some(val == 0), 
+            Some(parity_even(val)), 
+            Some(val & 0x80 != 0)
+        )
     }
 
     // Set Carry
@@ -1500,13 +1557,14 @@ impl Intel8080 {
         let val = self.get_src(reg, memory);
         let val = val.wrapping_add(1);
         self.write_dst(reg, val, memory);
-        self.set_condition(val);
-        self.registers.set_status_aux_carry(val & 0x0F == 0x0F);
+        self.set_condition(val, None, Some(val & 0x0F == 0x0F));
 
         if reg == Operand8::Memory {
-            return 10
+            10
         }
-        return 5
+        else {
+            5
+        }
     }
 
     // Decrement Register or Memory
@@ -1514,13 +1572,14 @@ impl Intel8080 {
         let orig_val = self.get_src(reg, memory);
         let new_val = orig_val.wrapping_sub(0x1);
         self.write_dst(reg, new_val, memory);
-        self.set_condition(new_val);
-        self.registers.set_status_aux_carry(orig_val & 0xF != 0);
+        self.set_condition(new_val, None, Some(orig_val & 0xF != 0));
 
         if reg == Operand8::Memory {
-            return 10
+            10
         }
-        return 5
+        else {
+            5
+        }
     }
 
     // Complement Accumulator
@@ -1544,9 +1603,7 @@ impl Intel8080 {
         }
 
         self.registers.set_accumulator(val);
-        self.set_condition(val);
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
+        self.set_condition(val, Some(carry), Some(aux_carry));
         4
     }
 
@@ -1555,10 +1612,15 @@ impl Intel8080 {
         let val = self.get_src(src, memory);
         self.write_dst(dst, val, memory);
 
-        if (dst == Operand8::Memory) || (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match dst {
+            Operand8::Memory | Operand8::Immediate => 7,
+            _ => {
+                match src {
+                    Operand8::Immediate => 7,
+                    _ => 5
+                }
+            }
         }
-        return 5
     }
 
     // Store Accumulator
@@ -1594,79 +1656,69 @@ impl Intel8080 {
     // ADD Register or Memory to Accumulator
     fn add(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
         let old_val: u8 = self.registers.accumulator();
-        let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory)); 
+        let (new_val, carry) = old_val.overflowing_add(self.get_src(src, memory)); 
         
-        let carry: bool = check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val as u8);
-        self.set_condition(new_val as u8);
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
+        self.set_condition(new_val as u8, Some(carry), Some(aux_carry));
         
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     }
 
     // ADD Register or Memory to Accumulator With Carry
     fn adc(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
         let old_val: u8 = self.registers.accumulator();
-        let new_val: u8 = old_val.wrapping_add(self.get_src(src, memory))
-            .wrapping_add(self.registers.status_carry() as u8); 
-        
-        let carry: bool = check_carry(old_val, new_val);
+        let (new_val, carry) = old_val.overflowing_add(self.get_src(src, memory));
+        let (new_val, carry_carry) = new_val.overflowing_add(self.registers.status_carry() as u8);
+
+        let carry = carry || carry_carry;
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val);
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
+        self.set_condition(new_val as u8, Some(carry), Some(aux_carry));
         
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     }
 
     // Subtract Register or Memory From Accumulator
     fn sub(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
         let old_val = self.registers.accumulator();
-        let new_val = old_val.wrapping_sub(self.get_src(src, memory));
+        let (new_val, carry) = old_val.overflowing_sub(self.get_src(src, memory));
 
-        let carry: bool = !check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val);
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
+        self.set_condition(new_val as u8, Some(carry), Some(aux_carry));
         
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     } 
 
     // Subtract Register or Memory From Accumulator With Borrow
     fn sbb(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
         let old_val = self.registers.accumulator();
-        let new_val = old_val.wrapping_sub(self.get_src(src, memory))
-                             .wrapping_sub(self.registers.status_carry() as u8);
+        let (new_val, carry) = old_val.overflowing_sub(self.get_src(src, memory));
+        let (new_val, carry_carry) = new_val.overflowing_sub(self.registers.status_carry() as u8);
 
-        let carry: bool = !check_carry(old_val, new_val);
+        let carry: bool = carry || carry_carry;
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
         self.registers.set_accumulator(new_val);
-        self.set_condition(new_val);
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
+        self.set_condition(new_val, Some(carry), Some(aux_carry));
         
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     }
 
     // Logical and Register or Memory With Accumulator
@@ -1674,60 +1726,52 @@ impl Intel8080 {
         let src = Operand8::from(src);
 
         let val: u8 = self.registers.accumulator() & self.get_src(src, memory);
-        self.set_condition(val);
-        self.registers.set_status_carry(false);
-        self.registers.set_status_aux_carry(false);
+        self.set_condition(val as u8, Some(false), Some(false));
         self.registers.set_accumulator(val);
-        
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     }
 
     // Logical Exclusive-Or Register or Memory with Accumulator
     fn xra(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
         let val: u8 = self.registers.accumulator() ^ self.get_src(src, memory);
-        self.set_condition(val);
-        self.registers.set_status_carry(false);
-        self.registers.set_status_aux_carry(false);
+        self.set_condition(val as u8, Some(false), Some(false));
         self.registers.set_accumulator(val);
         
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     }
 
     // Logical or Register or Memory with Accumulator
     fn ora(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
         let val: u8 = self.registers.accumulator() | self.get_src(src, memory);
-        self.set_condition(val);
-        self.registers.set_status_carry(false);
+        self.set_condition(val as u8, Some(false), Some(false));
         self.registers.set_accumulator(val);
         
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     }
 
     // Compare Register or Memory with Accumulator
     fn cmp(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u64 {
         let old_val = self.registers.accumulator();
-        let new_val = old_val.wrapping_add(twos_complement(self.get_src(src, memory)));
+        let (new_val, carry) = old_val.overflowing_sub(self.get_src(src, memory));
 
-        let carry: bool = !check_carry(old_val, new_val);
         let aux_carry: bool = check_aux_carry(old_val, new_val);
 
-        self.set_condition(new_val);
-        self.registers.set_status_carry(carry);
-        self.registers.set_status_aux_carry(aux_carry);
+        self.set_condition(new_val, Some(carry), Some(aux_carry));
         
-        if (src == Operand8::Memory) || (src == Operand8::Immediate) {
-            return 7
+        match src {
+            Operand8::Memory | Operand8::Immediate => { 7 }
+            _ => { 4 }
         }
-        return 4
     }
 
     // Rotate Accumulator Left
@@ -1816,36 +1860,33 @@ impl Intel8080 {
             _ => { unreachable!() }
         };
 
-        memory.write_byte(self.registers.sp().wrapping_sub(1), first_register);
-        memory.write_byte(self.registers.sp().wrapping_sub(2), second_register);
         self.registers.set_sp(self.registers.sp().wrapping_sub(2));
+        memory.write_bytes(self.registers.sp(), &[second_register, first_register]);
 
         11
     }
 
     // Pop Data Off Stack
     fn pop(&mut self, dst: Operand16, memory: &impl MemoryAccess) -> u64 {
-        let second_register = memory.read_byte(self.registers.sp());
-        let first_register = memory.read_byte(self.registers.sp().wrapping_add(1));
-
+        let bytes = memory.read_bytes(self.registers.sp(), 2);
         self.registers.set_sp(self.registers.sp().wrapping_add(2));
 
         match dst {
             Operand16::RegPairB => {
-                self.registers.set_b(first_register);
-                self.registers.set_c(second_register);
+                self.registers.set_b(bytes[1]);
+                self.registers.set_c(bytes[0]);
             },
             Operand16::RegPairD => {
-                self.registers.set_d(first_register);
-                self.registers.set_e(second_register);
+                self.registers.set_d(bytes[1]);
+                self.registers.set_e(bytes[0]);
             },
             Operand16::RegPairH => {
-                self.registers.set_h(first_register);
-                self.registers.set_l(second_register);
+                self.registers.set_h(bytes[1]);
+                self.registers.set_l(bytes[0]);
             },
             Operand16::PSW => {
-                self.registers.set_status(first_register);
-                self.registers.set_accumulator(second_register);
+                self.registers.set_status_byte(bytes[1]);
+                self.registers.set_accumulator(bytes[0]);
             },
             _ => { panic!("Invalid dst passed to POP: {:?}!", dst) }
         };
@@ -1905,39 +1946,38 @@ impl Intel8080 {
 
     // Load Register Pair Immediate
     fn lxi(&mut self, dst: Operand16, memory: &impl MemoryAccess) -> u64 {
-        self.load_imm16(memory);
-        let val = self.registers.pair_w();
+        let val = self.load_imm16(memory);
         self.write_dst_16(dst, val);
         10
     }
 
     // Store Accumulator Direct
     fn sta(&mut self, memory: &mut impl MemoryAccess) -> u64 {
-        self.load_imm16(memory);
-        memory.write_byte(self.registers.pair_w(), self.registers.accumulator());
+        let val = self.load_imm16(memory);
+        memory.write_byte(val, self.registers.accumulator());
         13
     }
 
     // Load Accumulator Direct
     fn lda(&mut self, memory: &mut impl MemoryAccess) -> u64 {
-        self.load_imm16(memory);
-        self.registers.set_accumulator(memory.read_byte(self.registers.pair_w()));
+        let val = self.load_imm16(memory);
+        self.registers.set_accumulator(memory.read_byte(val));
         13
     }
 
     // Store H and L Direct
     fn shld(&mut self, memory: &mut impl MemoryAccess) -> u64 {
-        self.load_imm16(memory);
-        memory.write_byte(self.registers.pair_w(), self.registers.l());
-        memory.write_byte(self.registers.pair_w().wrapping_add(1), self.registers.h());
+        let val = self.load_imm16(memory);
+        memory.write_bytes(val, &[self.registers.l(), self.registers.h()]);
         16
     }
 
     // Load H and L Direct
     fn lhld(&mut self, memory: &mut impl MemoryAccess) -> u64 {
-        self.load_imm16(memory);
-        self.registers.set_l(memory.read_byte(self.registers.pair_w()));
-        self.registers.set_h(memory.read_byte(self.registers.pair_w().wrapping_add(1)));
+        let val = self.load_imm16(memory);
+        let bytes = memory.read_bytes(val, 2);
+        self.registers.set_l(bytes[0]);
+        self.registers.set_h(bytes[1]);
         15
     }
 
@@ -1963,13 +2003,17 @@ impl Intel8080 {
 
     // Jump
     fn jmp(&mut self, condition: ConditionCode, memory: &impl MemoryAccess) -> u64 {
-        self.load_imm16(memory);
-
         if self.check_condition(condition) {
-            self.registers.set_pc(self.registers.pair_w());
+            debug!("JMP condition met");
+            let addr = self.load_imm16(memory);
+            self.registers.set_pc(addr);
+            10
         }
-
-        return 10
+        else {
+            debug!("JMP condition not met");
+            self.registers.set_pc(self.registers.pc().wrapping_add(2));
+            3
+        }
     }
 
     fn push_pc(&mut self, memory: &mut impl MemoryAccess) {
@@ -1986,24 +2030,31 @@ impl Intel8080 {
 
     // Call
     fn call(&mut self, condition: ConditionCode, memory: &mut impl MemoryAccess) -> u64 {
-        self.load_imm16(memory);
-
         if self.check_condition(condition) {
+            debug!("CALL condition met");
+            let addr = self.load_imm16(memory);
             self.push_pc(memory);
-            self.registers.set_pc(self.registers.pair_w());
-            
-            return 17;
+            self.registers.set_pc(addr);
+            17
         }
-        return 11
+        else {
+            debug!("CALL condition not met");
+            self.registers.set_pc(self.registers.pc().wrapping_add(2));
+            11
+        }
     }
     
     // Return
     fn ret(&mut self, condition: ConditionCode, memory: &mut impl MemoryAccess) -> u64 {
         if self.check_condition(condition) {
+            debug!("RET condition met");
             self.pop_pc(memory);
-            return if condition == ConditionCode::Unconditional {10} else {11};
+            if condition == ConditionCode::Unconditional {10} else {11}
         }
-        return 5;
+        else {
+            debug!("RET condition not met");
+            5
+        }
     }
 
     // Reset
@@ -2049,32 +2100,12 @@ impl Intel8080 {
 }
 
 // UTILITY FUNCTIONS
-
-fn check_carry(old_val: u8, new_val: u8) -> bool {
-    if new_val < old_val {
-        return true;
-    }
-    return false;
-}
-
 fn check_aux_carry(old_val: u8, new_val: u8) -> bool {
-    if (new_val & 0xF) < (old_val & 0xF) {
-        return true;
-    }
-    return false;
+    if (new_val & 0x0F) < (old_val & 0x0F) { true } else { false }
 }
 
 fn parity_even(val: u8) -> bool {
     return val.count_ones() % 2 == 0;
-}
-
-fn twos_complement(val: u8) -> u8 {
-    return (!val).wrapping_add(1)
-}
-
-#[inline(always)]
-fn make_u16(higher_order: u8, lower_order: u8) -> u16 {
-    u16::from_be_bytes([higher_order, lower_order])
 }
 
 // END UTILITY FUNCTIONS
