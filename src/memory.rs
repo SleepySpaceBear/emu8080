@@ -2,7 +2,7 @@ pub trait MemoryAccess {
     fn read_byte(&self, addr: u16) -> u8;
     fn write_byte(&mut self, addr: u16, val: u8);
 
-    fn read_bytes(&self, addr: u16, count: u16) -> &[u8];
+    fn read_bytes<const C: usize> (&self, addr: u16) -> [u8; C];
     fn write_bytes(&mut self, addr: u16, val: &[u8]);
 }
 
@@ -42,10 +42,10 @@ impl<const N: usize> MemoryAccess for Memory<N> {
         }
     }
 
-    fn read_bytes(&self, addr: u16, count: u16) -> &[u8] {
+    fn read_bytes<const C: usize>(&self, addr: u16) -> [u8; C] {
         let start = addr as usize;
-        let end = start + count as usize;
-        &self.arr[start..end]
+        let end = start + C;
+        unsafe { self.arr[start..end].try_into().unwrap_unchecked() }
     }
 
     fn write_bytes(&mut self, addr: u16, val: &[u8]) {

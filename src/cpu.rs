@@ -1049,6 +1049,10 @@ impl Registers {
     pub fn pair_w(&self) -> u16 {
         unsafe { self.wz.pair }
     }
+
+    fn set_pair_w(&mut self, val: u16) {
+        self.wz.pair = val;
+    }
 }
 
 impl fmt::Debug for Registers {
@@ -1220,10 +1224,7 @@ impl Intel8080 {
 
     fn fetch_immediate16(&mut self, memory: &impl MemoryAccess) -> [u8; 2] {
         self.registers.set_pc(self.registers.pc().wrapping_add(2));
-        unsafe {
-            memory.read_bytes(self.registers.pc().wrapping_sub(2), 2)
-                .try_into().unwrap_unchecked()
-        }
+        memory.read_bytes::<2>(self.registers.pc().wrapping_sub(2))
     }
 
 
@@ -1480,9 +1481,9 @@ impl Intel8080 {
     #[inline(always)]
     fn load_imm16(&mut self, memory: &impl MemoryAccess) -> u16 {
         let bytes = self.fetch_immediate16(memory);
-        self.registers.set_z(bytes[0]);
-        self.registers.set_w(bytes[1]);
-        u16::from_le_bytes([bytes[0], bytes[1]])
+        let val = u16::from_le_bytes(unsafe{ bytes.try_into().unwrap_unchecked() });
+        self.registers.set_pair_w(val);
+        val
     }
 
     fn get_src(&mut self, src: Operand8, memory: &impl MemoryAccess) -> u8 {
@@ -1872,7 +1873,7 @@ impl Intel8080 {
 
     // Pop Data Off Stack
     fn pop(&mut self, dst: Operand16, memory: &impl MemoryAccess) -> u64 {
-        let bytes = memory.read_bytes(self.registers.sp(), 2);
+        let bytes = memory.read_bytes::<2>(self.registers.sp());
         self.registers.set_sp(self.registers.sp().wrapping_add(2));
 
         match dst {
@@ -1979,9 +1980,8 @@ impl Intel8080 {
     // Load H and L Direct
     fn lhld(&mut self, memory: &mut impl MemoryAccess) -> u64 {
         let val = self.load_imm16(memory);
-        let bytes = memory.read_bytes(val, 2);
-        self.registers.set_l(bytes[0]);
-        self.registers.set_h(bytes[1]);
+        let val = u16::from_le_bytes(memory.read_bytes::<2>(val));
+        self.registers.set_pair_h(val);
         15
     }
 
@@ -2026,8 +2026,8 @@ impl Intel8080 {
     }
 
     fn pop_pc(&mut self, memory: &mut impl MemoryAccess) {
-        let pc = memory.read_bytes(self.registers.sp(), 2);
-        let pc = u16::from_le_bytes(pc.try_into().unwrap());
+        let pc = memory.read_bytes::<2>(self.registers.sp());
+        let pc = u16::from_le_bytes(pc);
         self.registers.set_sp(self.registers.sp().wrapping_add(2));
         self.registers.set_pc(pc);
     }
